@@ -29,7 +29,8 @@
     --bs-warning: var(--manager-accent);
     --bs-secondary-color: #c7e3ffbf;
 
-    --bs-card-color: #143388f0 !important;
+    --bs-card-color: #143388f0;
+    /* --bs-dark-rgb : #002a55; */
     
     --bs-border-color: var(--manager-border);
     --bs-card-bg: var(--manager-surface);
@@ -196,4 +197,8 @@ h2 {
 
 .nav-tabs .nav-link.active, .nav-tabs .nav-item.show .nav-link{
     color:var(--bs-secondary-color)
+}
+
+.nav-link{
+    padding:0.25rem !important
 }

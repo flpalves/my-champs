@@ -23,9 +23,7 @@
           <BThead>
             <BTr>
               <BTh>Nome do Torneio</BTh>
-              <BTh>Formato</BTh>
               <BTh>Times</BTh>
-              <BTh>Criado em</BTh>
               <BTh>Status</BTh>
               <BTh class="text-end">Ações</BTh>
             </BTr>
@@ -35,17 +33,9 @@
               <BTd class="fw-bold text-primary">{{ camp.nome }}</BTd>
               
               <BTd>
-                {{ camp.turnos === 1 ? 'Turno Único' : 'Ida e Volta' }}
-              </BTd>
-
-              <BTd>
                 <BBadge variant="light" class="  border">
                   {{ camp.timesParticipantes ? camp.timesParticipantes.length : 0 }} clubes
                 </BBadge>
-              </BTd>
-
-              <BTd class="small text-muted">
-                {{ formatarData(camp.dataCriacao) }}
               </BTd>
 
               <BTd>

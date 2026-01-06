@@ -12,13 +12,33 @@
 
         <div v-else>
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h2 class="text-primary fw-bold mb-0">{{ campeonato.nome }}</h2>
-                    <span class="text-muted small">
-                        {{ campeonato.timesParticipantes.length }} Times • {{ totalRodadas }} Rodadas
-                    </span>
+                
+                <div style="flex-grow: 1;">
+                    <div v-if="!editandoNome" @dblclick="ativarEdicaoNome" class="cursor-pointer" title="Duplo clique para editar nome">
+                        <h2 class="text-primary fw-bold mb-0">
+                            {{ campeonato.nome }} 
+                            <span class="fs-6 text-muted ms-2 opacity-50 d-none d-md-inline-block">✎</span>
+                        </h2>
+                        <span class="text-muted small">
+                            {{ campeonato.timesParticipantes.length }} Times • {{ totalRodadas }} Rodadas
+                        </span>
+                    </div>
+                    
+                    <div v-else class="d-flex align-items-center gap-2">
+                        <BFormInput 
+                            v-model="nomeTemp" 
+                            size="lg" 
+                            class="fw-bold text-primary" 
+                            style="max-width: 400px;"
+                            @keyup.enter="salvarNome" 
+                            auto-focus 
+                        />
+                        <BButton size="sm" variant="success" @click="salvarNome">✔</BButton>
+                        <BButton size="sm" variant="outline-secondary" @click="cancelarEdicaoNome">✖</BButton>
+                    </div>
                 </div>
-                <div class="d-flex gap-2">
+
+                <div class="d-flex gap-2 ms-3">
                     <BButton variant="outline-secondary" @click="$router.push('/lista-campeonatos')">
                         Voltar
                     </BButton>
@@ -42,7 +62,10 @@
 
             <BCard class="shadow-sm">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h4 class="m-0">Rodada {{ rodadaAtual }} <span v-if="nomeFaseAtual" class="badge bg-info fs-6 ms-2">{{ nomeFaseAtual }}</span></h4>
+                    <h4 class="m-0">
+                        Rodada {{ rodadaAtual }} 
+                        <span v-if="nomeFaseAtual" class="badge bg-info fs-6 ms-2">{{ nomeFaseAtual }}</span>
+                    </h4>
                     <BPagination v-model="rodadaAtual" :total-rows="totalRodadas" :per-page="1" prev-text="Anterior" next-text="Próxima" hide-goto-end-buttons class="m-0" />
                 </div>
                 <hr />
@@ -50,45 +73,66 @@
                     <div v-if="jogosDaRodada.length === 0" class="text-center text-muted py-3">
                         Nenhum jogo nesta rodada.
                     </div>
-                    <div v-for="jogo in jogosDaRodada" :key="jogo.id" class="jogo-row py-3 border-bottom align-items-start">
-                        <BRow class="w-100 m-0">
-                            <BCol cols="4" class="text-end">
+
+                    <div v-for="jogo in jogosDaRodada" :key="jogo.id" class="jogo-row py-3 border-bottom align-items-center">
+                        <BRow class="w-100 m-0 align-items-center">
+                            
+                            <BCol cols="4" md="4" class="text-end px-1">
                                 <div class="d-flex align-items-center justify-content-end gap-2">
-                                    <span class="fw-bold d-none d-md-block">{{ jogo.timeA.nome }}</span>
-                                    <span class="fw-bold d-md-none">{{ jogo.timeA.nome.substring(0, 3).toUpperCase() }}</span>
-                                    <img :src="jogo.timeA.escudo" style="width: 35px; height: 35px; object-fit: contain;" onerror="this.style.display='none'" />
+                                    <span class="fw-bold d-none d-md-block text-truncate">{{ jogo.timeA.nome }}</span>
+                                    <span class="fw-bold d-md-none">{{ getSigla(jogo.timeA) }}</span>
+                                    <img :src="jogo.timeA.escudo" style="width: 30px; height: 30px; object-fit: contain;" onerror="this.style.display='none'" />
                                 </div>
-                                <div class="mt-2 text-muted small" style="font-size: 0.75rem; line-height: 1.2;">
-                                    <div v-for="(autor, idx) in getAutoresGols(jogo, jogo.timeA.id)" :key="idx">{{ autor }} ⚽</div>
+                                <div class="mt-1 text-muted small lh-1 text-truncate" style="font-size: 0.7rem;">
+                                    <span v-for="(autor, idx) in getAutoresGols(jogo, jogo.timeA.id)" :key="idx" class="d-block">{{ autor }} ⚽</span>
                                 </div>
                             </BCol>
-                            <BCol cols="4">
-                                <div class="d-flex justify-content-center align-items-center gap-2 mb-1">
-                                    <BFormInput type="number" v-model.number="jogo.golsA" class="text-center p-1" style="width: 50px; height: 40px; font-weight: bold;" :class="{ 'border-success': jogo.finalizado }" placeholder="" />
-                                    <span class="fw-bold text-muted">X</span>
-                                    <BFormInput type="number" v-model.number="jogo.golsB" class="text-center p-1" style="width: 50px; height: 40px; font-weight: bold;" :class="{ 'border-success': jogo.finalizado }" placeholder="" />
-                                    <BButton size="sm" :variant="jogo.finalizado ? 'success' : 'outline-primary'" class="ms-1 py-0 px-2" style="height: 40px;" title="Salvar Resultado" @click="salvarPlacar(jogo)">
-                                        <span v-if="jogo.finalizado">✔</span>
-                                        <span v-else>💾</span>
-                                    </BButton>
-                                    <BButton size="sm" variant="outline-secondary" class="ms-1 py-0 px-2" style="height: 40px;" title="Abrir Súmula" @click="irParaSumula(jogo)">
-                                        📝
-                                    </BButton>
+
+                            <BCol cols="4" md="2" class="px-0">
+                                <div class="d-flex justify-content-center align-items-center gap-1">
+                                    <BFormInput type="number" v-model.number="jogo.golsA" 
+                                        class="text-center p-0 m-0 fw-bold" 
+                                        style="width: 40px; height: 35px;" 
+                                        :class="{ 'border-success': jogo.finalizado }" />
+                                    
+                                    <span class="fw-bold text-muted mx-1">X</span>
+                                    
+                                    <BFormInput type="number" v-model.number="jogo.golsB" 
+                                        class="text-center p-0 m-0 fw-bold" 
+                                        style="width: 40px; height: 35px;" 
+                                        :class="{ 'border-success': jogo.finalizado }" />
                                 </div>
-                                <div class="text-center text-muted small mt-1" style="font-size: 0.75rem;">
+                                <div class="text-center text-muted small mt-1 text-truncate" style="font-size: 0.65rem;">
                                     🏟️ {{ getEstadio(jogo.timeA.id) }}
                                 </div>
                             </BCol>
-                            <BCol cols="4" class="text-start">
+
+                            <BCol cols="4" md="4" class="text-start px-1">
                                 <div class="d-flex align-items-center justify-content-start gap-2">
-                                    <img :src="jogo.timeB.escudo" style="width: 35px; height: 35px; object-fit: contain;" onerror="this.style.display='none'" />
-                                    <span class="fw-bold d-none d-md-block">{{ jogo.timeB.nome }}</span>
-                                    <span class="fw-bold d-md-none">{{ jogo.timeB.nome.substring(0, 3).toUpperCase() }}</span>
+                                    <img :src="jogo.timeB.escudo" style="width: 30px; height: 30px; object-fit: contain;" onerror="this.style.display='none'" />
+                                    <span class="fw-bold d-none d-md-block text-truncate">{{ jogo.timeB.nome }}</span>
+                                    <span class="fw-bold d-md-none">{{ getSigla(jogo.timeB) }}</span>
                                 </div>
-                                <div class="mt-2 text-muted small" style="font-size: 0.75rem; line-height: 1.2;">
-                                    <div v-for="(autor, idx) in getAutoresGols(jogo, jogo.timeB.id)" :key="idx">⚽ {{ autor }}</div>
+                                <div class="mt-1 text-muted small lh-1 text-truncate" style="font-size: 0.7rem;">
+                                    <span v-for="(autor, idx) in getAutoresGols(jogo, jogo.timeB.id)" :key="idx" class="d-block">⚽ {{ autor }}</span>
                                 </div>
                             </BCol>
+
+                            <BCol cols="12" md="2" class="text-center text-md-end mt-2 mt-md-0 px-1">
+                                <div class="d-flex justify-content-center justify-content-md-end gap-1">
+                                    <BButton size="sm" :variant="jogo.finalizado ? 'success' : 'outline-primary'" 
+                                        class="py-1 px-2" title="Salvar Resultado" @click="salvarPlacar(jogo)">
+                                        <span v-if="jogo.finalizado">✔</span>
+                                        <span v-else>💾</span>
+                                    </BButton>
+
+                                    <BButton size="sm" variant="outline-secondary" class="py-1 px-2" 
+                                        title="Súmula / Detalhes" @click="irParaSumula(jogo)">
+                                        📝
+                                    </BButton>
+                                </div>
+                            </BCol>
+
                         </BRow>
                     </div>
                 </div>
@@ -100,7 +144,7 @@
                 <BAlert show variant="info" class="small">
                     Confira os vencedores dos confrontos.
                 </BAlert>
-                <div v-for="confronto in confrontosEncerramento" :key="confronto.id" class="border rounded p-3 mb-3">
+                <div v-for="confronto in confrontosEncerramento" :key="confronto.id" class="border rounded p-3 mb-3 bg-light">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <span class="fw-bold text-muted small">Confronto #{{ confronto.id }}</span>
                     </div>
@@ -146,6 +190,12 @@ export default {
             campeonato: null,
             rodadaAtual: 1,
             id: '',
+            
+            // Edição de Nome
+            editandoNome: false,
+            nomeTemp: '',
+
+            // Mata-mata logic
             modalEncerramentoAberto: false,
             confrontosEncerramento: []
         }
@@ -164,42 +214,27 @@ export default {
             if (this.jogosDaRodada.length > 0) return this.jogosDaRodada[0].fase;
             return '';
         },
-        // Verifica se pode encerrar fase de MATA-MATA
         podeEncerrarFase() {
-            // Permite se for MATA-MATA nativo OU se for GRUPOS mas já estiver numa fase de mata-mata
-            const ehMataMataNativo = (this.campeonato && this.campeonato.tipo === 'MATA_MATA');
+            if (!this.campeonato || this.campeonato.tipo !== 'MATA_MATA') return false;
+            
             const faseAtual = this.nomeFaseAtual;
-            
-            // Se for Grupos, só libera se tiver uma fase nomeada (ex: Oitavas, Quartas)
-            // Jogos de grupo não tem nome de fase (fase é undefined ou null)
-            const ehMataMataDeGrupos = (this.campeonato && this.campeonato.tipo === 'GRUPOS' && faseAtual);
-
-            if (!ehMataMataNativo && !ehMataMataDeGrupos) return false;
-            
             if(!faseAtual) return false;
 
             const jogosDaFase = this.campeonato.jogos.filter(j => j.fase === faseAtual);
             if (jogosDaFase.length === 0) return false;
 
             const todosFinalizados = jogosDaFase.every(j => j.finalizado);
-            
             const confrontosUnicos = new Set(jogosDaFase.map(j => j.confrontoId));
             if (confrontosUnicos.size === 1 && faseAtual.toLowerCase().includes('final')) return false;
 
             return todosFinalizados;
         },
-        // Verifica se pode encerrar GRUPOS
         podeEncerrarGrupos() {
             if (!this.campeonato || this.campeonato.tipo !== 'GRUPOS') return false;
-            
-            // Só libera se não tiver jogos de mata-mata criados (ou seja, fase nula/grupo)
             const jaTemMataMata = this.campeonato.jogos.some(j => j.fase);
             if(jaTemMataMata) return false;
-
-            // Todos os jogos devem estar finalizados
             const todosJogos = this.campeonato.jogos;
             if(todosJogos.length === 0) return false;
-            
             return todosJogos.every(j => j.finalizado);
         }
     },
@@ -221,6 +256,37 @@ export default {
                 this.carregando = false;
             }
         },
+
+        // --- EDIÇÃO DE NOME ---
+        ativarEdicaoNome() {
+            this.nomeTemp = this.campeonato.nome;
+            this.editandoNome = true;
+        },
+        cancelarEdicaoNome() {
+            this.editandoNome = false;
+        },
+        async salvarNome() {
+            if (!this.nomeTemp.trim()) return alert("Nome não pode ser vazio.");
+            
+            this.campeonato.nome = this.nomeTemp;
+            try {
+                await DbService.atualizarCampeonato(this.campeonato);
+                this.editandoNome = false;
+            } catch (error) {
+                console.error(error);
+                alert("Erro ao renomear.");
+            }
+        },
+
+        // --- HELPER DE SIGLA ---
+        getSigla(time) {
+            const timeCompleto = this.campeonato.timesParticipantes.find(t => t.id === time.id);
+            if (timeCompleto && timeCompleto.sigla) {
+                return timeCompleto.sigla;
+            }
+            return time.nome.substring(0, 3).toUpperCase();
+        },
+
         getEstadio(timeId) {
             if (!this.campeonato || !this.campeonato.timesParticipantes) return '-';
             const time = this.campeonato.timesParticipantes.find(t => t.id === timeId);
@@ -333,12 +399,10 @@ export default {
         async confirmarFimGrupos() {
             if(!confirm("Tem certeza? Isso encerrará a fase de grupos e gerará o Mata-Mata.")) return;
 
-            // 1. Calcular a classificação
             const classificacao = this.calcularClassificacaoGrupos();
             const classificadosPorGrupo = {};
             const qtdClassificados = this.campeonato.classificadosPorGrupo || 2;
 
-            // 2. Selecionar os N melhores de cada grupo
             for(const nomeGrupo in classificacao) {
                 classificadosPorGrupo[nomeGrupo] = classificacao[nomeGrupo].slice(0, qtdClassificados);
             }
@@ -346,15 +410,10 @@ export default {
             try {
                 this.carregando = true;
                 const ultimaRodadaAntiga = this.totalRodadas;
-                
                 await DbService.avancarGruposParaMataMata(this.campeonato.id, classificadosPorGrupo);
-                
                 alert("Mata-Mata gerado com sucesso!");
                 await this.carregarCampeonato();
                 this.rodadaAtual = ultimaRodadaAntiga + 1;
-                // Hack visual: força mudança para tipo mata-mata na UI localmente se precisar, 
-                // mas a estrutura de dados permanece "GRUPOS" com jogos de mata-mata.
-                // A TabelaClassificacao lidará com isso.
             } catch (error) {
                 console.error(error);
                 alert("Erro ao gerar mata-mata.");
@@ -365,12 +424,10 @@ export default {
 
         calcularClassificacaoGrupos() {
             const mapaStats = {};
-            // Inicializa
             this.campeonato.timesParticipantes.forEach(t => {
                 mapaStats[t.id] = { ...t, pontos: 0, vitorias: 0, saldoGols: 0, golsPro: 0 };
             });
 
-            // Computa pontos
             this.campeonato.jogos.forEach(jogo => {
                 if(!jogo.finalizado) return;
                 const tA = mapaStats[jogo.timeA.id];
@@ -386,7 +443,6 @@ export default {
                 tB.golsPro += jogo.golsB;
             });
 
-            // Agrupa por Nome do Grupo
             const gruposObj = {};
             this.campeonato.grupos.forEach(g => { gruposObj[g.nome] = [] });
 
@@ -398,7 +454,6 @@ export default {
                 }
             });
 
-            // Ordena
             for(const nome in gruposObj) {
                 gruposObj[nome].sort((a,b) => {
                     if(b.pontos !== a.pontos) return b.pontos - a.pontos;
@@ -417,4 +472,5 @@ input[type=number]::-webkit-inner-spin-button,
 input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 input[type=number] { -moz-appearance: textfield; }
 .jogo-row:last-child { border-bottom: none !important; }
+.cursor-pointer { cursor: pointer; }
 </style>

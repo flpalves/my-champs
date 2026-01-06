@@ -246,7 +246,7 @@ export default {
                 const mapaTimes = new Map();
                 timesAtuais.forEach(t => mapaTimes.set(String(t.id), t));
                 dados.times.forEach(t => mapaTimes.set(String(t.id), t));
-                
+
                 timesFinais = Array.from(mapaTimes.values());
 
                 // 3. Mescla Campeonatos
@@ -271,6 +271,17 @@ export default {
         } catch (error) {
             console.error("Erro ao importar backup:", error);
             throw error;
+        }
+    },
+    async atualizarCampeonato(campAtualizado) {
+        const listaCamps = await this.getCampeonatos();
+        const index = listaCamps.findIndex(c => String(c.id) === String(campAtualizado.id));
+
+        if (index !== -1) {
+            listaCamps[index] = JSON.parse(JSON.stringify(campAtualizado));
+            await localforage.setItem(KEYS.CAMPEONATOS, listaCamps);
+        } else {
+            throw new Error("Campeonato não encontrado");
         }
     },
 };

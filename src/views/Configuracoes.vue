@@ -84,7 +84,7 @@
           <div class="d-flex justify-content-between align-items-center">
             <div>
               <h5 class="text-danger fw-bold">☠️ Zona de Perigo</h5>
-              <p class="mb-0 text-muted small">Deseja começar do zero? Isso apagará tudo permanentemente.</p>
+              <p class="mb-0 text-danger small">Deseja começar do zero? Isso apagará tudo permanentemente.</p>
             </div>
             <BButton variant="outline-danger" @click="resetarTudo">Resetar Fábrica</BButton>
           </div>
