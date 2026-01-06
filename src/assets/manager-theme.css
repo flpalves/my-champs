@@ -1,0 +1,199 @@
+/* src/assets/manager-theme.css */
+
+/* 1. IMPORTAR FONTE ESPORTIVA (Google Fonts) */
+@import url('https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,300;0,400;0,600;1,400&family=Roboto:wght@300;400;500;700&display=swap');
+
+:root {
+    /* PALETA DE CORES "MANAGER" */
+    --manager-bg-dark: #111827;       /* Fundo quase preto */
+    --manager-surface: #1f2937;       /* Fundo dos cards */
+    --manager-surface-hover: #374151; /* Hover nas tabelas */
+    --manager-primary: #10b981;       /* Verde Gramado (Ação Principal) */
+    --manager-secondary: #3b82f6;     /* Azul "Jersey" (Ação Secundária) */
+    --manager-accent: #f59e0b;        /* Dourado (Troféus/Destaques) */
+    --manager-text: #f9fafb;          /* Texto Claro */
+    --manager-text-muted: #9ca3af;    /* Texto Secundário */
+    --manager-border: #374151;        /* Bordas sutis */
+
+    /* SOBRESCRITA DE VARIÁVEIS DO BOOTSTRAP */
+    --bs-body-bg: var(--manager-bg-dark);
+    --bs-body-color: var(--manager-text);
+    --bs-font-sans-serif: 'Roboto', sans-serif;
+    
+    --bs-primary: var(--manager-primary);
+    --bs-primary-rgb: 16, 185, 129;
+    
+    --bs-secondary: var(--manager-surface-hover);
+    --bs-success: var(--manager-primary);
+    --bs-info: var(--manager-secondary);
+    --bs-warning: var(--manager-accent);
+    --bs-secondary-color: #c7e3ffbf;
+
+    --bs-card-color: #143388f0 !important;
+    
+    --bs-border-color: var(--manager-border);
+    --bs-card-bg: var(--manager-surface);
+    --bs-card-border-color: var(--manager-border);
+}
+
+/* 2. ESTILOS GERAIS */
+body {
+    background-color: var(--bs-body-bg);
+    color: var(--bs-body-color);
+}
+
+/* Títulos com fonte esportiva */
+h1, h2, h3, h4, h5, h6, .navbar-brand {
+    font-family: 'Kanit', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+}
+
+h2 {
+    color: var(--manager-text);
+    border-left: 5px solid var(--manager-primary);
+    padding-left: 15px;
+}
+
+.page-link.disabled, .disabled > .page-link{
+    color: var(--manager-bg-dark);
+    opacity: 0.25;
+}
+.table-striped > tbody > tr:nth-of-type(odd) > *{
+    color: #fff;
+}
+.table-hover > tbody > tr:hover > *{
+    color: #FFF;
+}
+/* 3. CARDS (Painéis) */
+.card {
+    border: 1px solid var(--manager-border);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+    border-radius: 8px;
+}
+
+.card-header {
+    background-color: rgba(0,0,0,0.2);
+    border-bottom: 1px solid var(--manager-border);
+    font-family: 'Kanit', sans-serif;
+    font-weight: 400;
+    text-transform: uppercase;
+    color: var(--manager-accent);
+}
+
+/* 4. TABELAS (Estilo Classificação) */
+.table {
+    --bs-table-bg: transparent;
+    --bs-table-color: var(--manager-text);
+    --bs-table-border-color: var(--manager-border);
+    --bs-table-hover-bg: var(--manager-surface-hover);
+    --bs-table-striped-bg: rgba(255,255,255, 0.03);
+}
+
+.table thead th {
+    background-color: #111; /* Cabeçalho preto */
+    color: var(--manager-secondary);
+    font-family: 'Kanit', sans-serif;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    border-bottom: 2px solid var(--manager-secondary);
+}
+
+/* 5. FORMULÁRIOS (Inputs Escuros) */
+.form-control, .form-select {
+    background-color: #111827;
+    border: 1px solid var(--manager-border);
+    color: var(--manager-text);
+}
+
+.form-control:focus, .form-select:focus {
+    background-color: #000;
+    color: #fff;
+    border-color: var(--manager-primary);
+    box-shadow: 0 0 0 0.25rem rgba(16, 185, 129, 0.25);
+}
+
+.form-control::placeholder {
+    color: var(--manager-text-muted);
+}
+
+/* 6. BOTÕES */
+.btn {
+    font-family: 'Kanit', sans-serif;
+    text-transform: uppercase;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    border-radius: 4px;
+}
+
+.btn-primary {
+    color: #000; /* Texto preto no botão verde para contraste */
+    font-weight: bold;
+}
+
+.btn-outline-secondary {
+    color: var(--manager-text-muted);
+    border-color: var(--manager-border);
+}
+.btn-outline-secondary:hover {
+    background-color: var(--manager-surface-hover);
+    color: white;
+}
+
+/* 7. BADGES e ALERTAS */
+.badge {
+    font-weight: normal;
+    letter-spacing: 0.5px;
+}
+
+.alert-info {
+    background-color: rgba(59, 130, 246, 0.1);
+    border-color: var(--manager-secondary);
+    color: #93c5fd;
+}
+
+.alert-danger {
+    background-color: rgba(239, 68, 68, 0.1);
+    border-color: #ef4444;
+    color: #fca5a5;
+}
+
+/* 8. Modal */
+.modal-content {
+    background-color: var(--manager-surface);
+    border: 1px solid var(--manager-border);
+}
+.modal-header {
+    border-bottom: 1px solid var(--manager-border);
+}
+.modal-footer {
+    border-top: 1px solid var(--manager-border);
+}
+.btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+/* 9. Scrollbar Customizada */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: var(--manager-bg-dark); 
+}
+::-webkit-scrollbar-thumb {
+    background: var(--manager-border); 
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--manager-secondary); 
+}
+
+.input-group-text {
+    background-color: var(--manager-bg-dark)
+}
+
+.nav-tabs .nav-link.active, .nav-tabs .nav-item.show .nav-link{
+    color:var(--bs-secondary-color)
+}
