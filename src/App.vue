@@ -25,8 +25,6 @@
               </router-link>
             </li>
 
-            <li class="nav-item dropdown-divider d-lg-none my-2 border-secondary"></li>
-
             <li class="nav-item">
               <router-link to="/lista-clubes" class="nav-link" @click="menuAberto = false">
                 Clubes
@@ -35,11 +33,9 @@
 
             <li class="nav-item">
               <router-link to="/novo-time" class="nav-link" @click="menuAberto = false">
-                + Novo Clube
+                Novo Clube
               </router-link>
             </li>
-
-            <li class="nav-item dropdown-divider d-lg-none my-2 border-secondary"></li>
 
             <li class="nav-item">
               <router-link to="/lista-campeonatos" class="nav-link" @click="menuAberto = false">
@@ -48,15 +44,24 @@
             </li>
 
             <li class="nav-item">
-              <router-link to="/novo-campeonato"
-                class="nav-link btn btn-sm btn-outline-primary px-3 text-white-important" @click="menuAberto = false">
+              <router-link to="/novo-campeonato" class="nav-link" @click="menuAberto = false">
                 Criar Torneio
               </router-link>
             </li>
 
             <li class="nav-item">
+              <router-link to="/sobre" class="nav-link" @click="menuAberto = false">
+                Sobre
+              </router-link>
+            </li>
+            <li class="nav-item">
+              <router-link to="/como-funciona" class="nav-link" @click="menuAberto = false">
+                Como Funciona
+              </router-link>
+            </li>
+            <li class="nav-item">
               <router-link to="/configuracoes" class="nav-link" @click="menuAberto = false">
-                ⚙️ Configurações
+                Configurações
               </router-link>
             </li>
 
@@ -83,12 +88,21 @@
 </template>
 
 <script>
+import DbService from './services/DbService.js';
 export default {
   data() {
     return {
       menuAberto: false // Controla o estado do menu no mobile
     }
+  },
+  async mounted() {
+    // Tenta ativar a persistência silenciosamente ao iniciar
+    await DbService.solicitarPersistencia();
+
+    // (Opcional) Loga o uso de espaço no console para você monitorar
+    await DbService.verificarEspaco();
   }
+
 }
 </script>
 

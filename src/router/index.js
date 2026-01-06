@@ -11,6 +11,8 @@ import TabelaClassificacao from '@/views/TabelaClassificacao.vue'
 import SumulaJogo from '@/views/SumulaJogo.vue'
 import ArtilhariaCampeonato from '@/views/ArtilhariaCampeonato.vue'
 import Configuracoes from '@/views/Configuracoes.vue'
+import Sobre from '@/views/Sobre.vue'
+import ComoFunciona from '@/views/ComoFunciona.vue'
 
 const routes = [
   {
@@ -73,6 +75,16 @@ const routes = [
     path: '/configuracoes',
     name: 'Configuracoes',
     component: Configuracoes
+  },
+  {
+    path: '/sobre',
+    name: 'Sobre',
+    component: Sobre
+  },
+  {
+    path: '/como-funciona',
+    name: 'ComoFunciona',
+    component: ComoFunciona
   },
   {
     path: '/about',

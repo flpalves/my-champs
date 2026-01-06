@@ -18,7 +18,7 @@
                 <span class="text-muted small">Rodada {{ jogo.rodada }}</span>
             </div>
 
-            <BCard class="text-center shadow-sm mb-4 border-0">
+            <BCard class="text-center shadow-sm mb-4 border-secondary bg-dark text-white">
                 <div class="d-flex justify-content-center align-items-center mb-3">
                     <div class="text-center mx-3" style="width: 100px;">
                         <div class="position-relative d-inline-block">
@@ -30,10 +30,10 @@
                         <small class="fw-bold text-truncate mt-2 d-block">{{ jogo.timeA.nome }}</small>
                     </div>
 
-                    <div class="d-flex align-items-center px-3 py-2 rounded shadow-sm border">
-                        <h1 class="m-0 fw-bold">{{ golsA }}</h1>
-                        <span class="mx-2 text-muted">x</span>
-                        <h1 class="m-0 fw-bold">{{ golsB }}</h1>
+                    <div class="d-flex align-items-center px-3 py-2 rounded shadow-sm border border-secondary bg-secondary">
+                        <h1 class="m-0 fw-bold text-white">{{ golsA }}</h1>
+                        <span class="mx-2 text-white-50">x</span>
+                        <h1 class="m-0 fw-bold text-white">{{ golsB }}</h1>
                     </div>
 
                     <div class="text-center mx-3" style="width: 100px;">
@@ -47,35 +47,35 @@
                     </div>
                 </div>
                 <div class="d-flex justify-content-center">
-                    <BFormGroup label="Data do Jogo:" label-cols="auto" class="mb-0">
-                        <BFormInput type="datetime-local" v-model="jogo.dataHora" size="sm" @change="salvarAlteracoes" />
+                    <BFormGroup label="Data do Jogo:" label-cols="auto" class="mb-0 text-white-50">
+                        <BFormInput type="datetime-local" v-model="jogo.dataHora" size="sm" class="bg-secondary text-white border-secondary" @change="salvarAlteracoes" />
                     </BFormGroup>
                 </div>
             </BCard>
 
-            <ul class="nav nav-tabs mb-4 nav-justified">
+            <ul class="nav nav-tabs mb-4 nav-justified border-secondary">
                 <li class="nav-item">
-                    <a class="nav-link" :class="{ active: abaAtiva === 'EVENTOS' }" href="#" @click.prevent="abaAtiva = 'EVENTOS'">
+                    <a class="nav-link" :class="{ active: abaAtiva === 'EVENTOS', 'text-white': abaAtiva !== 'EVENTOS' }" href="#" @click.prevent="abaAtiva = 'EVENTOS'">
                         📝 Súmula
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" :class="{ active: abaAtiva === 'TIMELINE' }" href="#" @click.prevent="abaAtiva = 'TIMELINE'">
+                    <a class="nav-link" :class="{ active: abaAtiva === 'TIMELINE', 'text-white': abaAtiva !== 'TIMELINE' }" href="#" @click.prevent="abaAtiva = 'TIMELINE'">
                         ⏱️ Lances
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" :class="{ active: abaAtiva === 'ESCALACAO' }" href="#" @click.prevent="abaAtiva = 'ESCALACAO'">
+                    <a class="nav-link" :class="{ active: abaAtiva === 'ESCALACAO', 'text-white': abaAtiva !== 'ESCALACAO' }" href="#" @click.prevent="abaAtiva = 'ESCALACAO'">
                         📋 Escalação
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" :class="{ active: abaAtiva === 'SUBS' }" href="#" @click.prevent="abaAtiva = 'SUBS'">
+                    <a class="nav-link" :class="{ active: abaAtiva === 'SUBS', 'text-white': abaAtiva !== 'SUBS' }" href="#" @click.prevent="abaAtiva = 'SUBS'">
                         🔄 Subs
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" :class="{ active: abaAtiva === 'UNIFORMES' }" href="#" @click.prevent="abaAtiva = 'UNIFORMES'">
+                    <a class="nav-link" :class="{ active: abaAtiva === 'UNIFORMES', 'text-white': abaAtiva !== 'UNIFORMES' }" href="#" @click.prevent="abaAtiva = 'UNIFORMES'">
                         👕 Uniformes
                     </a>
                 </li>
@@ -84,14 +84,15 @@
             <div v-if="abaAtiva === 'UNIFORMES'">
                 <BRow>
                     <BCol md="6" class="mb-4">
-                        <BCard :title="`Uniforme: ${jogo.timeA.nome}`" class="h-100">
+                        <BCard :title="`Uniforme: ${jogo.timeA.nome}`" class="h-100 bg-dark text-white border-secondary">
                             <div v-if="!timeFullA.cores || timeFullA.cores.length === 0" class="text-muted small">
-                                Nenhuma cor cadastrada para este time. Edite o time para adicionar opções.
+                                Nenhuma cor cadastrada para este time. <br>
+                                <a href="#" class="text-info" @click.prevent="$router.push(`/editar-clube/${jogo.timeA.id}`)">Clique aqui para editar o clube.</a>
                             </div>
                             <div v-else class="d-flex flex-wrap gap-3">
                                 <div v-for="(cor, idx) in timeFullA.cores" :key="idx" 
-                                     class="color-option p-2 border rounded cursor-pointer"
-                                     :class="{ 'border-primary shadow-sm': isUniformeSelecionado(cor, 'A') }"
+                                     class="color-option p-2 border border-secondary rounded cursor-pointer"
+                                     :class="{ 'border-primary bg-secondary shadow-sm': isUniformeSelecionado(cor, 'A') }"
                                      @click="selecionarUniforme(cor, 'A')">
                                     <div class="color-badge mx-auto" 
                                          :style="{ backgroundColor: cor.interno, borderColor: cor.externo }">
@@ -103,14 +104,15 @@
                     </BCol>
 
                     <BCol md="6" class="mb-4">
-                        <BCard :title="`Uniforme: ${jogo.timeB.nome}`" class="h-100">
+                        <BCard :title="`Uniforme: ${jogo.timeB.nome}`" class="h-100 bg-dark text-white border-secondary">
                             <div v-if="!timeFullB.cores || timeFullB.cores.length === 0" class="text-muted small">
-                                Nenhuma cor cadastrada para este time.
+                                Nenhuma cor cadastrada para este time. <br>
+                                <a href="#" class="text-info" @click.prevent="$router.push(`/editar-clube/${jogo.timeB.id}`)">Clique aqui para editar o clube.</a>
                             </div>
                             <div v-else class="d-flex flex-wrap gap-3">
                                 <div v-for="(cor, idx) in timeFullB.cores" :key="idx" 
-                                     class="color-option p-2 border rounded cursor-pointer"
-                                     :class="{ 'border-primary   shadow-sm': isUniformeSelecionado(cor, 'B') }"
+                                     class="color-option p-2 border border-secondary rounded cursor-pointer"
+                                     :class="{ 'border-primary bg-secondary shadow-sm': isUniformeSelecionado(cor, 'B') }"
                                      @click="selecionarUniforme(cor, 'B')">
                                     <div class="color-badge mx-auto" 
                                          :style="{ backgroundColor: cor.interno, borderColor: cor.externo }">
@@ -124,12 +126,12 @@
             </div>
 
             <div v-else-if="abaAtiva === 'TIMELINE'">
-                <BCard title="Histórico da Partida" class="shadow-sm">
+                <BCard title="Histórico da Partida" class="shadow-sm bg-dark text-white border-secondary">
                     <div v-if="timeline.length === 0" class="text-center text-muted py-4">
                         Nenhum evento registrado ainda.
                     </div>
                     <div v-else class="timeline-container">
-                        <div v-for="(evento, index) in timeline" :key="evento.id" class="d-flex align-items-center mb-3 border-bottom pb-2">
+                        <div v-for="(evento, index) in timeline" :key="evento.id" class="d-flex align-items-center mb-3 border-bottom border-secondary pb-2">
                             
                             <div class="me-3 text-center" style="width: 40px;">
                                 <div class="fs-4">{{ getIconeEvento(evento) }}</div>
@@ -164,19 +166,25 @@
             </div>
 
             <div v-else-if="abaAtiva === 'ESCALACAO'">
-                <div class="alert alert-info small">
+                <div class="alert alert-info bg-dark border-info text-info small">
                     Selecione os jogadores que iniciaram a partida.
                 </div>
                 <BRow>
                     <BCol md="6" class="mb-3">
-                        <BCard :title="jogo.timeA.nome" class="h-100">
-                            <div class="d-flex justify-content-between mb-2">
+                        <BCard class="h-100 bg-dark text-white border-secondary">
+                            <template #header>
+                                <h6 class="mb-0 text-white">{{ jogo.timeA.nome }}</h6>
+                            </template>
+                            <div class="d-flex justify-content-between align-items-center mb-3">
                                 <span class="small text-muted">Selecionados: {{ jogo.titularesA.length }}</span>
-                                <BButton size="sm" variant="link" @click="selecionarTodos('A')">Todos</BButton>
+                                <div>
+                                    <BButton size="sm" variant="link" class="text-decoration-none text-info" @click="selecionarTodos('A')">Todos</BButton>
+                                    <BButton size="sm" variant="link" class="text-decoration-none text-secondary" @click="selecionarNenhum('A')">Nenhum</BButton>
+                                </div>
                             </div>
                             <div class="list-group">
-                                <div v-for="jogador in elencoA" :key="getId(jogador)" class="list-group-item d-flex align-items-center">
-                                    <input class="form-check-input me-3" type="checkbox" :checked="ehTitular(jogador, jogo.titularesA)" @change="toggleTitular(jogador, 'A')" style="cursor: pointer;">
+                                <div v-for="jogador in elencoA" :key="getId(jogador)" class="list-group-item list-group-item-action list-group-item-dark d-flex align-items-center border-secondary">
+                                    <input class="form-check-input me-3 bg-dark border-secondary" type="checkbox" :checked="ehTitular(jogador, jogo.titularesA)" @change="toggleTitular(jogador, 'A')" style="cursor: pointer;">
                                     <span class="badge bg-secondary me-2">{{ jogador.numero }}</span>
                                     {{ jogador.nome }}
                                 </div>
@@ -184,14 +192,20 @@
                         </BCard>
                     </BCol>
                     <BCol md="6" class="mb-3">
-                        <BCard :title="jogo.timeB.nome" class="h-100">
-                            <div class="d-flex justify-content-between mb-2">
+                        <BCard class="h-100 bg-dark text-white border-secondary">
+                            <template #header>
+                                <h6 class="mb-0 text-white">{{ jogo.timeB.nome }}</h6>
+                            </template>
+                            <div class="d-flex justify-content-between align-items-center mb-3">
                                 <span class="small text-muted">Selecionados: {{ jogo.titularesB.length }}</span>
-                                <BButton size="sm" variant="link" @click="selecionarTodos('B')">Todos</BButton>
+                                <div>
+                                    <BButton size="sm" variant="link" class="text-decoration-none text-info" @click="selecionarTodos('B')">Todos</BButton>
+                                    <BButton size="sm" variant="link" class="text-decoration-none text-secondary" @click="selecionarNenhum('B')">Nenhum</BButton>
+                                </div>
                             </div>
                             <div class="list-group">
-                                <div v-for="jogador in elencoB" :key="getId(jogador)" class="list-group-item d-flex align-items-center">
-                                    <input class="form-check-input me-3" type="checkbox" :checked="ehTitular(jogador, jogo.titularesB)" @change="toggleTitular(jogador, 'B')" style="cursor: pointer;">
+                                <div v-for="jogador in elencoB" :key="getId(jogador)" class="list-group-item list-group-item-action list-group-item-dark d-flex align-items-center border-secondary">
+                                    <input class="form-check-input me-3 bg-dark border-secondary" type="checkbox" :checked="ehTitular(jogador, jogo.titularesB)" @change="toggleTitular(jogador, 'B')" style="cursor: pointer;">
                                     <span class="badge bg-secondary me-2">{{ jogador.numero }}</span>
                                     {{ jogador.nome }}
                                 </div>
@@ -204,17 +218,17 @@
             <div v-else-if="abaAtiva === 'SUBS'">
                 <BRow>
                     <BCol md="6" class="mb-4">
-                        <BCard :title="`Substituição - ${jogo.timeA.nome}`" class="h-100">
-                            <BFormGroup label="Sai (Em campo):" class="mb-2">
-                                <BFormSelect v-model="subTempA.saiId">
+                        <BCard :title="`Substituição - ${jogo.timeA.nome}`" class="h-100 bg-dark text-white border-secondary">
+                            <BFormGroup label="Sai (Em campo):" class="mb-2 text-white-50">
+                                <BFormSelect v-model="subTempA.saiId" class="bg-secondary text-white border-secondary">
                                     <option :value="null">Selecione...</option>
                                     <option v-for="j in getJogadoresEmCampo(elencoA, jogo.titularesA, jogo.timeA.id)" :key="getId(j)" :value="getId(j)">
                                         #{{ j.numero }} - {{ j.nome }}
                                     </option>
                                 </BFormSelect>
                             </BFormGroup>
-                            <BFormGroup label="Entra (Banco):" class="mb-3">
-                                <BFormSelect v-model="subTempA.entraId">
+                            <BFormGroup label="Entra (Banco):" class="mb-3 text-white-50">
+                                <BFormSelect v-model="subTempA.entraId" class="bg-secondary text-white border-secondary">
                                     <option :value="null">Selecione...</option>
                                     <option v-for="j in getJogadoresNoBanco(elencoA, jogo.titularesA, jogo.timeA.id)" :key="getId(j)" :value="getId(j)">
                                         #{{ j.numero }} - {{ j.nome }}
@@ -228,17 +242,17 @@
                     </BCol>
 
                     <BCol md="6" class="mb-4">
-                        <BCard :title="`Substituição - ${jogo.timeB.nome}`" class="h-100">
-                            <BFormGroup label="Sai (Em campo):" class="mb-2">
-                                <BFormSelect v-model="subTempB.saiId">
+                        <BCard :title="`Substituição - ${jogo.timeB.nome}`" class="h-100 bg-dark text-white border-secondary">
+                            <BFormGroup label="Sai (Em campo):" class="mb-2 text-white-50">
+                                <BFormSelect v-model="subTempB.saiId" class="bg-secondary text-white border-secondary">
                                     <option :value="null">Selecione...</option>
                                     <option v-for="j in getJogadoresEmCampo(elencoB, jogo.titularesB, jogo.timeB.id)" :key="getId(j)" :value="getId(j)">
                                         #{{ j.numero }} - {{ j.nome }}
                                     </option>
                                 </BFormSelect>
                             </BFormGroup>
-                            <BFormGroup label="Entra (Banco):" class="mb-3">
-                                <BFormSelect v-model="subTempB.entraId">
+                            <BFormGroup label="Entra (Banco):" class="mb-3 text-white-50">
+                                <BFormSelect v-model="subTempB.entraId" class="bg-secondary text-white border-secondary">
                                     <option :value="null">Selecione...</option>
                                     <option v-for="j in getJogadoresNoBanco(elencoB, jogo.titularesB, jogo.timeB.id)" :key="getId(j)" :value="getId(j)">
                                         #{{ j.numero }} - {{ j.nome }}
@@ -254,7 +268,7 @@
             </div>
 
             <div v-else>
-                <div class="sticky-top   py-3 border-bottom mb-4" style="z-index: 10;">
+                <div class="sticky-top bg-dark border-bottom border-secondary py-3 mb-4" style="z-index: 10;">
                     <p class="text-center text-muted small mb-2">
                         <span v-if="!ferramentaAtiva">Selecione uma ação e clique no jogador.</span>
                         <span v-else class="text-primary fw-bold">Modo Ativo: APLICAR {{ ferramentaAtiva }}</span>
@@ -270,17 +284,17 @@
 
                 <BRow>
                     <BCol md="6" class="mb-4">
-                        <h6 class="text-center border-bottom pb-2">{{ jogo.timeA.nome }}</h6>
+                        <h6 class="text-center border-bottom border-secondary pb-2 text-white">{{ jogo.timeA.nome }}</h6>
                         <div class="list-group">
                             <button v-for="jogador in elencoA" :key="getId(jogador)"
-                                class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+                                class="list-group-item list-group-item-action list-group-item-dark d-flex justify-content-between align-items-center border-secondary"
                                 :class="getClasseJogador(jogador, jogo.timeA.id)"
                                 @click="aplicarAcao(jogador, jogo.timeA.id)" style="cursor: pointer;">
                                 
                                 <div class="d-flex align-items-center">
                                     <span class="badge bg-secondary me-2" style="width: 30px;">{{ jogador.numero }}</span>
                                     <span class="me-2">{{ jogador.nome }}</span>
-                                    <span v-if="ehTitular(jogador, jogo.titularesA)" class="badge text-info border me-1" title="Titular">T</span>
+                                    <span v-if="ehTitular(jogador, jogo.titularesA)" class="badge text-info border border-info me-1" title="Titular">T</span>
                                     <span v-if="entrouNoJogo(jogador, jogo.timeA.id)" class="text-success me-1" title="Entrou">⬆</span>
                                     <span v-if="saiuDoJogo(jogador, jogo.timeA.id)" class="text-danger me-1" title="Saiu">⬇</span>
                                     <span v-if="ehCraque(jogador, jogo.timeA.id)" title="Craque">⭐</span>
@@ -296,17 +310,17 @@
                     </BCol>
 
                     <BCol md="6" class="mb-4">
-                        <h6 class="text-center border-bottom pb-2">{{ jogo.timeB.nome }}</h6>
+                        <h6 class="text-center border-bottom border-secondary pb-2 text-white">{{ jogo.timeB.nome }}</h6>
                         <div class="list-group">
                             <button v-for="jogador in elencoB" :key="getId(jogador)"
-                                class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+                                class="list-group-item list-group-item-action list-group-item-dark d-flex justify-content-between align-items-center border-secondary"
                                 :class="getClasseJogador(jogador, jogo.timeB.id)"
                                 @click="aplicarAcao(jogador, jogo.timeB.id)" style="cursor: pointer;">
                                 
                                 <div class="d-flex align-items-center">
                                     <span class="badge bg-secondary me-2" style="width: 30px;">{{ jogador.numero }}</span>
                                     <span class="me-2">{{ jogador.nome }}</span>
-                                    <span v-if="ehTitular(jogador, jogo.titularesB)" class="badge text-info border me-1" title="Titular">T</span>
+                                    <span v-if="ehTitular(jogador, jogo.titularesB)" class="badge text-info border border-info me-1" title="Titular">T</span>
                                     <span v-if="entrouNoJogo(jogador, jogo.timeB.id)" class="text-success me-1" title="Entrou">⬆</span>
                                     <span v-if="saiuDoJogo(jogador, jogo.timeB.id)" class="text-danger me-1" title="Saiu">⬇</span>
                                     <span v-if="ehCraque(jogador, jogo.timeB.id)" title="Craque">⭐</span>
@@ -339,17 +353,13 @@ export default {
             carregando: true,
             abaAtiva: 'EVENTOS',
             jogo: null,
-            
-            // Objetos completos dos times (para acessar cores)
             timeFullA: {}, 
             timeFullB: {},
-            
             elencoA: [],
             elencoB: [],
             ferramentaAtiva: null,
             idCampeonato: '',
             idJogo: '',
-            
             subTempA: { saiId: null, entraId: null },
             subTempB: { saiId: null, entraId: null }
         }
@@ -363,16 +373,11 @@ export default {
             if (!this.jogo?.eventos) return 0;
             return this.jogo.eventos.filter(e => e.tipo === 'GOL' && e.timeId === this.jogo.timeB.id).length;
         },
-        // Gera a Timeline mesclada e ordenada
         timeline() {
             if (!this.jogo) return [];
-            
             const eventos = (this.jogo.eventos || []).map(e => ({ ...e, categoria: 'EVENTO' }));
             const subs = (this.jogo.substituicoes || []).map(s => ({ ...s, tipo: 'SUBS', categoria: 'SUBS' }));
-            
             const listaCompleta = [...eventos, ...subs];
-            
-            // Ordena por ID (timestamp)
             return listaCompleta.sort((a, b) => a.id - b.id);
         }
     },
@@ -391,26 +396,28 @@ export default {
                 const jogoEncontrado = camp.jogos.find(j => String(j.id) === String(this.idJogo));
                 if (!jogoEncontrado) throw new Error("Jogo não encontrado");
 
-                // Inicializações de segurança
                 if (!jogoEncontrado.eventos) jogoEncontrado.eventos = [];
                 if (!jogoEncontrado.substituicoes) jogoEncontrado.substituicoes = [];
                 if (!jogoEncontrado.titularesA) jogoEncontrado.titularesA = [];
                 if (!jogoEncontrado.titularesB) jogoEncontrado.titularesB = [];
                 if (!jogoEncontrado.dataHora) jogoEncontrado.dataHora = '';
                 if (!jogoEncontrado.craque) jogoEncontrado.craque = null; 
-                // Inicializa uniformes se não existirem
                 if (!jogoEncontrado.uniformeA) jogoEncontrado.uniformeA = null;
                 if (!jogoEncontrado.uniformeB) jogoEncontrado.uniformeB = null;
 
-                // Carrega times completos
-                this.timeFullA = camp.timesParticipantes.find(t => t.id === jogoEncontrado.timeA.id) || {};
-                this.timeFullB = camp.timesParticipantes.find(t => t.id === jogoEncontrado.timeB.id) || {};
+                const timeGlobalA = await DbService.getTimeById(jogoEncontrado.timeA.id);
+                const timeGlobalB = await DbService.getTimeById(jogoEncontrado.timeB.id);
+
+                const snapshotA = camp.timesParticipantes.find(t => t.id === jogoEncontrado.timeA.id) || {};
+                const snapshotB = camp.timesParticipantes.find(t => t.id === jogoEncontrado.timeB.id) || {};
+
+                this.timeFullA = timeGlobalA || snapshotA;
+                this.timeFullB = timeGlobalB || snapshotB;
 
                 this.elencoA = this.timeFullA.jogadores || [];
                 this.elencoB = this.timeFullB.jogadores || [];
 
-                if (jogoEncontrado.titularesA.length === 0) jogoEncontrado.titularesA = this.elencoA.map(j => this.criarSnapshot(j));
-                if (jogoEncontrado.titularesB.length === 0) jogoEncontrado.titularesB = this.elencoB.map(j => this.criarSnapshot(j));
+                // REMOVIDO: Lógica de selecionar todos automaticamente. Agora começa vazio por padrão.
 
                 this.jogo = jogoEncontrado;
 
@@ -478,7 +485,6 @@ export default {
                 this.jogo.substituicoes = this.jogo.substituicoes.filter(s => s.id !== item.id);
             } else {
                 this.jogo.eventos = this.jogo.eventos.filter(e => e.id !== item.id);
-                // Se removeu craque, limpa flag
                 if (item.tipo === 'CRAQUE') {
                     this.jogo.craque = null;
                     this.jogo.craqueTimeId = null;
@@ -487,7 +493,7 @@ export default {
             await this.salvarAlteracoes();
         },
 
-        // --- MÉTODOS EXISTENTES (EVENTOS, ESCALAÇÃO, SUBS, ETC) ---
+        // --- AÇÕES ---
         alternarFerramenta(ferramenta) {
             this.ferramentaAtiva = (this.ferramentaAtiva === ferramenta) ? null : ferramenta;
         },
@@ -521,11 +527,10 @@ export default {
         },
 
         async removerEvento(evento) {
-            // Atalho antigo (mantido para compatibilidade da aba Sumula)
-            // Na aba Timeline temos um metodo proprio
             this.removerItemTimeline(evento);
         },
 
+        // --- ESCALAÇÃO ---
         toggleTitular(jogador, lado) {
             const lista = lado === 'A' ? this.jogo.titularesA : this.jogo.titularesB;
             const jId = this.getId(jogador);
@@ -542,6 +547,12 @@ export default {
         selecionarTodos(lado) {
             if (lado === 'A') this.jogo.titularesA = this.elencoA.map(j => this.criarSnapshot(j));
             else this.jogo.titularesB = this.elencoB.map(j => this.criarSnapshot(j));
+            this.salvarAlteracoes();
+        },
+
+        selecionarNenhum(lado) {
+            if (lado === 'A') this.jogo.titularesA = [];
+            else this.jogo.titularesB = [];
             this.salvarAlteracoes();
         },
 
@@ -569,7 +580,7 @@ export default {
         },
 
         async removerSubstituicao(sub) {
-            this.removerItemTimeline(sub); // Reutiliza lógica
+            this.removerItemTimeline(sub);
         },
 
         // --- HELPERS ---
@@ -626,8 +637,8 @@ export default {
             const saiu = subs.some(s => s.sai?.id == jId);
             const entrou = subs.some(s => s.entra?.id == jId);
             const titular = (titulares || []).some(t => t?.id == jId);
-            if ((titular && !saiu) || (entrou && !saiu)) return 'border-start border-1 border-info';
-            else if (saiu) return 'text-muted bg-dark';
+            if ((titular && !saiu) || (entrou && !saiu)) return 'border-start border-1 border-info'; // Em campo (verde neon ou azul neon)
+            else if (saiu) return 'text-muted bg-black opacity-50'; // Saiu (mais escuro)
             else return '';
         },
 
@@ -676,4 +687,15 @@ export default {
 }
 .cursor-pointer { cursor: pointer; }
 .nav-link { cursor: pointer; font-size:0.7rem }
+
+.list-group-item{
+    background-color: transparent;
+}
+.list-group-item-action:not(.active):hover, .list-group-item-action:not(.active):focus{
+    background-color: rgb(19, 4, 73);
+    color:#FFF;
+}
+[title="Entrou"], [title="Saiu"]{
+    font-size: 1.5rem;
+}
 </style>

@@ -284,4 +284,42 @@ export default {
             throw new Error("Campeonato não encontrado");
         }
     },
+    async solicitarPersistencia() {
+        if (navigator.storage && navigator.storage.persist) {
+            // 1. Verifica se já é persistente
+            const isPersisted = await navigator.storage.persisted();
+            if (isPersisted) {
+                console.log("✅ Armazenamento já é persistente.");
+                return true;
+            }
+
+            // 2. Se não for, solicita a permissão
+            const granted = await navigator.storage.persist();
+            if (granted) {
+                console.log("✅ Permissão de persistência concedida!");
+            } else {
+                console.warn("⚠️ Permissão de persistência negada ou não atendida pelo navegador.");
+            }
+            return granted;
+        } else {
+            console.log("ℹ️ API de persistência não suportada neste navegador.");
+            return false;
+        }
+    },
+
+    /**
+     * (Opcional) Verifica quanto espaço está sendo usado
+     */
+    async verificarEspaco() {
+        if (navigator.storage && navigator.storage.estimate) {
+            const { usage, quota } = await navigator.storage.estimate();
+            const usoMB = (usage / 1024 / 1024).toFixed(2);
+            const totalMB = (quota / 1024 / 1024).toFixed(2);
+            const porcentagem = ((usage / quota) * 100).toFixed(2);
+
+            console.log(`📊 Uso de Disco: ${usoMB}MB de ${totalMB}MB (${porcentagem}%)`);
+            return { usoMB, totalMB, porcentagem };
+        }
+        return null;
+    }
 };

@@ -202,3 +202,7 @@ h2 {
 .nav-link{
     padding:0.25rem !important
 }
+
+.bg-dark{
+    background-color: rgb(0,34,69) !important;
+}

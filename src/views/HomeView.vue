@@ -100,7 +100,7 @@
               </div>
             </BButton>
 
-            <BButton variant="outline-secondary" class="text-start p-3 d-flex align-items-center quick-btn" @click="$router.push('/cadastrar-clube')">
+            <BButton variant="outline-secondary" class="text-start p-3 d-flex align-items-center quick-btn" @click="$router.push('/novo-time')">
               <span class="fs-4 me-3">🛡️</span>
               <div>
                 <div class="fw-bold text-white">Cadastrar Clube</div>

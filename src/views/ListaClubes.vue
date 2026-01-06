@@ -37,8 +37,6 @@
             <BTr>
               <BTh>Escudo</BTh>
               <BTh>Nome</BTh>
-              <BTh>Estádio</BTh>
-              <BTh>Técnico</BTh>
               <BTh class="text-end">Ações</BTh>
             </BTr>
           </BThead>
@@ -53,8 +51,6 @@
                 />
               </BTd>
               <BTd class="fw-bold">{{ time.nome }}</BTd>
-              <BTd>{{ time.estadio }}</BTd>
-              <BTd>{{ time.tecnico }}</BTd>
               
               <BTd class="text-end">
                 <BButton 
