@@ -134,7 +134,7 @@
             <BCol md="4" class="text-center">
               <div class="bg-white p-2 d-inline-block rounded shadow-lg">
                 <img 
-                  src="https://placehold.co/150x150/white/black?text=QR+Code+PIX" 
+                  src="./../assets/qrcode-pix.png" 
                   alt="QR Code Pix" 
                   class="img-fluid"
                   style="width: 150px; height: 150px;"
