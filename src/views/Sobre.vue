@@ -104,6 +104,69 @@
       </BCol>
     </BRow>
 
+    <BRow class="mt-4">
+      <BCol md="12">
+        <div class="donation-card p-4 rounded border border-2 border-warning bg-dark position-relative overflow-hidden text-center text-md-start">
+          <div class="glow-effect"></div>
+          
+          <BRow class="align-items-center position-relative" style="z-index: 2;">
+            <BCol md="8" class="mb-4 mb-md-0">
+              <h3 class="text-warning fw-bold mb-2">
+                ☕ Gostou do Projeto?
+              </h3>
+              <p class="text-white lead mb-3">
+                O <strong>MY CHAMPS</strong> é 100% gratuito e sem anúncios. 
+                Se ele ajuda a organizar seus campeonatos, considere fazer uma doação de qualquer valor para manter o desenvolvedor motivado!
+              </p>
+              
+              <div class="d-flex flex-column flex-md-row gap-3 align-items-center">
+                <div class="bg-black bg-opacity-50 px-3 py-2 rounded border border-secondary d-flex align-items-center">
+                  <span class="text-muted small me-2">CHAVE PIX:</span>
+                  <span class="fw-bold text-white font-monospace user-select-all" id="chavePix">flpalves.dev@gmail.com</span>
+                </div>
+                <BButton variant="warning" size="sm" class="fw-bold text-dark" @click="copiarPix">
+                  <span v-if="copiado">Copiado! ✅</span>
+                  <span v-else>Copiar Chave 📋</span>
+                </BButton>
+              </div>
+            </BCol>
+
+            <BCol md="4" class="text-center">
+              <div class="bg-white p-2 d-inline-block rounded shadow-lg">
+                <img 
+                  src="https://placehold.co/150x150/white/black?text=QR+Code+PIX" 
+                  alt="QR Code Pix" 
+                  class="img-fluid"
+                  style="width: 150px; height: 150px;"
+                />
+                <div class="small text-dark mt-1 fw-bold">Scan Me</div>
+              </div>
+            </BCol>
+          </BRow>
+        </div>
+      </BCol>
+    </BRow>
+
+    <BRow class="mt-4">
+      <BCol md="12">
+        <div class="p-4 rounded border border-1 border-primary bg-dark d-flex flex-column flex-md-row align-items-center justify-content-between shadow-sm">
+          <div class="mb-3 mb-md-0">
+            <h4 class="text-primary fw-bold mb-1">💡 Tem uma ideia ou encontrou um bug?</h4>
+            <p class="text-muted mb-0 small">
+              Ajude a melhorar o sistema! Envie suas sugestões, críticas ou solicite novas funcionalidades diretamente para o desenvolvedor.
+            </p>
+          </div>
+          <BButton 
+            href="mailto:flpalves.dev@gmail.com?subject=Sugestão%20My%20Champs" 
+            variant="outline-primary" 
+            class="fw-bold px-4"
+          >
+            ✉️ Enviar E-mail
+          </BButton>
+        </div>
+      </BCol>
+    </BRow>
+
   </div>
 </template>
 
@@ -114,6 +177,25 @@ export default {
   name: 'Sobre',
   components: {
     BCard, BRow, BCol, BButton
+  },
+  data() {
+    return {
+      copiado: false
+    }
+  },
+  methods: {
+    copiarPix() {
+      const chave = "flpalves.dev@gmail.com";
+      navigator.clipboard.writeText(chave).then(() => {
+        this.copiado = true;
+        setTimeout(() => {
+          this.copiado = false;
+        }, 2000);
+      }).catch(err => {
+        console.error('Erro ao copiar', err);
+        alert('Copie manualmente: ' + chave);
+      });
+    }
   }
 }
 </script>
@@ -143,5 +225,26 @@ export default {
   justify-content: center;
   box-shadow: 0 2px 5px rgba(0,0,0,0.5);
   font-family: 'Kanit', sans-serif;
+}
+
+/* Estilos do Card de Doação */
+.donation-card {
+  box-shadow: 0 0 20px rgba(255, 193, 7, 0.1); /* Sombra dourada suave */
+  transition: transform 0.3s;
+}
+
+.donation-card:hover {
+  transform: scale(1.01);
+}
+
+.glow-effect {
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,193,7,0.05) 0%, rgba(0,0,0,0) 70%);
+  pointer-events: none;
+  z-index: 1;
 }
 </style>
