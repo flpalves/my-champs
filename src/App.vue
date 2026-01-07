@@ -80,7 +80,7 @@
 
     <footer class="text-center py-4 text-muted small border-top border-secondary mt-5 bg-dark">
       <div class="container">
-        <p class="mb-0">© 2026 Football Manager System. Desenvolvido com Vue 3.</p>
+        <p class="mb-0 text-mini">© 2026 My Champs. Desenvolvido com Vue 3. <a href="https://github.com/flpalves/my-champs" target="_blank">Github do projeto</a> | <a href="https://www.linkedin.com/in/felipe-alves-20743737/" target="_blank">Linkedin do pai da criança</a></p>
       </div>
     </footer>
 
@@ -185,5 +185,8 @@ main {
   &:focus {
     box-shadow: none;
   }
+}
+.text-mini{
+  font-size:0.7rem;
 }
 </style>
