@@ -44,7 +44,7 @@ Se você quer codar, testar ou apenas brincar de técnico, siga os passos:
 1.  **Clone o repositório:**
     ```bash
     git clone [https://github.com/flpalves/my-champs.git](https://github.com/flpalves/my-champs.git)
-    cd my-champs-manager
+    cd my-champs
     ```
 
 2.  **Instale as dependências:**
