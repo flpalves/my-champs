@@ -19,7 +19,7 @@ app.use(createBootstrap())
 // 2. CONFIGURAR O GA4 (Atualizado)
 app.use(VueGtag, {
   property: { 
-    id: "G-MPEJ549X65", // Coloque seu ID aqui
+    id: "G-3TCWCQPZCB", // Coloque seu ID aqui
     params: {
       anonymize_ip: true
     }
