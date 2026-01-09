@@ -7,7 +7,12 @@
         <BRow class="mb-3">
           <BCol md="6">
             <BFormGroup label="Nome do Torneio:" label-for="nome-camp">
-              <BFormInput id="nome-camp" v-model="campeonato.nome" placeholder="Ex: Copa do Brasil" required />
+              <BFormInput 
+                id="nome-camp" 
+                v-model="campeonato.nome" 
+                placeholder="Ex: Copa do Brasil" 
+                :state="campeonato.nome ? true : null"
+              />
             </BFormGroup>
           </BCol>
           <BCol md="6">
@@ -21,7 +26,7 @@
           </BCol>
         </BRow>
 
-        <div class="p-3 rounded mb-4 border">
+        <div class="bg-dark p-3 rounded mb-4 border">
           
           <div v-if="campeonato.tipo === 'PONTOS_CORRIDOS'">
             <BRow>
@@ -119,7 +124,7 @@
           <BFormInput v-model="termoBusca" placeholder="Filtrar times..." />
         </BInputGroup>
 
-        <div class="border rounded p-3   mb-3" style="max-height: 250px; overflow-y: auto;">
+        <div class="border rounded p-3 mb-3" style="max-height: 250px; overflow-y: auto;">
           <div v-if="timesParaExibir.length === 0" class="text-center text-muted">Nenhum time encontrado.</div>
           <div v-else>
             <div 
@@ -257,7 +262,7 @@
         </div>
 
         <div class="mt-4 d-grid gap-2">
-          <BButton type="submit" variant="success" size="lg" :disabled="!podeSalvar">
+          <BButton type="submit" variant="success" size="lg">
             Salvar Campeonato
           </BButton>
         </div>
@@ -300,7 +305,7 @@ export default {
       configGrupos: {
         qtdGrupos: 2,
         qtdPotes: 2,
-        classificadosPorGrupo: 2, // NOVO CAMPO: Padrão 2 avançam
+        classificadosPorGrupo: 2,
         potes: [ { times: [] }, { times: [] } ], 
         gruposManuais: []
       },
@@ -342,16 +347,6 @@ export default {
     },
     previewJogosApenasIda() {
         return this.previewJogos.filter(j => j.turno === 1);
-    },
-    podeSalvar() {
-      if (this.idsSelecionados.length < 2) return false;
-      if (!this.campeonato.nome) return false;
-
-      if (this.campeonato.tipo !== 'PONTOS_CORRIDOS') {
-        if (this.campeonato.tipo === 'GRUPOS' && this.previewGrupos.length === 0) return false;
-        if (this.campeonato.tipo === 'MATA_MATA' && this.previewJogos.length === 0) return false;
-      }
-      return true;
     }
   },
   async mounted() {
@@ -485,10 +480,29 @@ export default {
     },
 
     async salvarCampeonato() {
+      // VALIDAÇÃO MANUAL
+      const erros = [];
+
+      if (!this.campeonato.nome) erros.push("Nome do Torneio");
+      if (this.idsSelecionados.length < 2) erros.push("Selecione pelo menos 2 times");
+
+      if (this.campeonato.tipo !== 'PONTOS_CORRIDOS') {
+        if (this.campeonato.tipo === 'GRUPOS' && this.previewGrupos.length === 0) {
+            erros.push("Defina os grupos (Sorteie ou Confirme a escolha manual)");
+        }
+        if (this.campeonato.tipo === 'MATA_MATA' && this.previewJogos.length === 0) {
+            erros.push("Defina os confrontos (Sorteie ou Confirme a escolha manual)");
+        }
+      }
+
+      if (erros.length > 0) {
+        alert("Atenção! Resolva os seguintes itens antes de salvar:\n\n- " + erros.join("\n- "));
+        return;
+      }
+
       const dados = {
         ...this.campeonato,
         times: this.timesSelecionadosObj,
-        // Incluimos o número de classificados por grupo na config
         classificadosPorGrupo: this.campeonato.tipo === 'GRUPOS' ? this.configGrupos.classificadosPorGrupo : null,
         grupos: this.campeonato.tipo === 'GRUPOS' ? this.previewGrupos : [],
         jogos: (this.campeonato.tipo !== 'PONTOS_CORRIDOS') ? this.previewJogos : [] 

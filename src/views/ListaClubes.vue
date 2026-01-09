@@ -158,7 +158,9 @@ export default {
     async carregarTimes() {
       this.carregando = true;
       try {
-        this.todosOsTimes = await DbService.getTimes();
+        const times = await DbService.getTimes();
+        // ALTERAÇÃO: Ordena alfabeticamente pelo nome
+        this.todosOsTimes = times.sort((a, b) => a.nome.localeCompare(b.nome));
       } catch (error) {
         console.error("Erro ao listar times:", error);
       } finally {

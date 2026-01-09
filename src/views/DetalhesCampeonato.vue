@@ -144,7 +144,7 @@
                 <BAlert show variant="info" class="small">
                     Confira os vencedores dos confrontos.
                 </BAlert>
-                <div v-for="confronto in confrontosEncerramento" :key="confronto.id" class="border rounded p-3 mb-3 bg-light">
+                <div v-for="confronto in confrontosEncerramento" :key="confronto.id" class="border rounded p-3 mb-3 bg-dark">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <span class="fw-bold text-muted small">Confronto #{{ confronto.id }}</span>
                     </div>

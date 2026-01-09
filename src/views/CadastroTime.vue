@@ -10,8 +10,8 @@
               <BFormInput
                 id="nome-time"
                 v-model="novoTime.nome"
-                required
                 placeholder="Ex: Vue United"
+                :state="novoTime.nome ? true : null"
               />
             </BFormGroup>
           </BCol>
@@ -21,9 +21,9 @@
               <BFormInput
                 id="escudo-time"
                 v-model="novoTime.escudo"
-                required
                 placeholder="https://..."
                 @input="verificarImagem"
+                :state="(novoTime.escudo && !imagemErro) ? true : (imagemErro ? false : null)"
               />
             </BFormGroup>
           </BCol>
@@ -35,8 +35,8 @@
               <BFormInput
                 id="estadio-time"
                 v-model="novoTime.estadio"
-                required
                 placeholder="Ex: Arena Dom"
+                :state="novoTime.estadio ? true : null"
               />
             </BFormGroup>
           </BCol>
@@ -46,8 +46,8 @@
               <BFormInput
                 id="tecnico-time"
                 v-model="novoTime.tecnico"
-                required
                 placeholder="Ex: Guardiola"
+                :state="novoTime.tecnico ? true : null"
               />
             </BFormGroup>
           </BCol>
@@ -107,7 +107,7 @@
         </BRow>
 
         <div class="mt-4 d-grid gap-2">
-          <BButton type="submit" variant="primary" size="lg" :disabled="formularioInvalido">
+          <BButton type="submit" variant="primary" size="lg">
             Cadastrar Time
           </BButton>
         </div>
@@ -161,24 +161,30 @@ export default {
       }
     }
   },
-  computed: {
-    // Validação simplificada: Apenas dados do time são obrigatórios
-    formularioInvalido() {
-      const dadosGeraisVazios = !this.novoTime.nome || !this.novoTime.escudo || !this.novoTime.estadio || !this.novoTime.tecnico;
-      return dadosGeraisVazios || this.imagemErro;
-    }
-  },
   methods: {
     verificarImagem() {
-      this.imagemErro = false; // Reseta erro ao digitar nova URL
+      this.imagemErro = false; 
     },
     async salvarTime() {
-      if (this.formularioInvalido) {
-        alert("Preencha as informações gerais do time!");
+      // 1. Validação Manual para Feedback Detalhado
+      const erros = [];
+
+      if (!this.novoTime.nome) erros.push("Nome do Time");
+      if (!this.novoTime.escudo) erros.push("Link do Escudo");
+      if (!this.novoTime.estadio) erros.push("Estádio / Quadra");
+      if (!this.novoTime.tecnico) erros.push("Técnico / Responsável");
+      
+      if (this.imagemErro) {
+        erros.push("A imagem do escudo não pôde ser carregada (URL inválida).");
+      }
+
+      // Se houver erros, mostra alerta e para a execução
+      if (erros.length > 0) {
+        alert("Atenção! Preencha os seguintes campos obrigatórios:\n\n- " + erros.join("\n- "));
         return;
       }
 
-      // Filtra jogadores vazios
+      // 2. Filtra jogadores vazios
       const jogadoresValidos = this.novoTime.jogadores.filter(j => j.nome.trim() !== '');
 
       if (jogadoresValidos.length === 0) {

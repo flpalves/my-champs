@@ -80,7 +80,7 @@
 
     <BRow class="mt-4">
       <BCol md="12">
-        <BCard class="border-danger bg-light">
+        <BCard class="border-danger bg-dark">
           <div class="d-flex justify-content-between align-items-center">
             <div>
               <h5 class="text-danger fw-bold">☠️ Zona de Perigo</h5>
