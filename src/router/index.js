@@ -13,6 +13,7 @@ import ArtilhariaCampeonato from '@/views/ArtilhariaCampeonato.vue'
 import Configuracoes from '@/views/Configuracoes.vue'
 import Sobre from '@/views/Sobre.vue'
 import ComoFunciona from '@/views/ComoFunciona.vue'
+import RelatorioImpressao from '@/views/RelatorioImpressao.vue'
 
 const routes = [
   {
@@ -85,6 +86,11 @@ const routes = [
     path: '/como-funciona',
     name: 'ComoFunciona',
     component: ComoFunciona
+  },
+  {
+    path: '/campeonato/:id/imprimir',
+    name: 'RelatorioImpressao',
+    component: RelatorioImpressao
   },
   {
     path: '/about',

@@ -2,26 +2,23 @@
  * Utilitário para geração de tabelas de jogos.
  */
 
-function gerarRoundRobin(times, turnos) {
+// ... (MANTENHA AS FUNÇÕES ANTERIORES: gerarRoundRobin, gerarJogosPontosCorridos, gerarJogosGrupos, gerarJogosMataMata, gerarJogosProximaFaseMataMata) ...
+// ... Copie o conteúdo anterior até chegar na função gerarJogosMataMataDeGrupos ...
+
+export function gerarRoundRobin(times, turnos) {
     let listaTimes = [...times];
-    
     if (listaTimes.length % 2 !== 0) {
         listaTimes.push({ id: 'GHOST', nome: 'FOLGA' });
     }
-
     const totalTimes = listaTimes.length;
     const totalRodadas = totalTimes - 1;
     const jogosPorRodada = totalTimes / 2;
-    
     let jogosGerados = [];
-
     for (let rodada = 0; rodada < totalRodadas; rodada++) {
         for (let i = 0; i < jogosPorRodada; i++) {
             const timeA = listaTimes[i];
             const timeB = listaTimes[totalTimes - 1 - i];
-
             if (timeA.id === 'GHOST' || timeB.id === 'GHOST') continue;
-
             jogosGerados.push({
                 id: crypto.randomUUID(),
                 rodada: rodada + 1,
@@ -34,7 +31,6 @@ function gerarRoundRobin(times, turnos) {
         const ultimo = listaTimes.pop();
         listaTimes.splice(1, 0, ultimo);
     }
-
     if (turnos === 2) {
         const jogosReturno = jogosGerados.map(jogo => ({
             ...jogo,
@@ -47,7 +43,6 @@ function gerarRoundRobin(times, turnos) {
         }));
         jogosGerados = [...jogosGerados, ...jogosReturno];
     }
-
     return jogosGerados.sort((a, b) => a.rodada - b.rodada);
 }
 
@@ -57,34 +52,26 @@ export function gerarJogosPontosCorridos(times, turnos) {
 
 export function gerarJogosGrupos(grupos, turnos) {
     let todosJogos = [];
-    
     grupos.forEach((grupo, idx) => {
         if (!grupo.times || grupo.times.length < 2) return;
-
         const jogosGrupo = gerarRoundRobin(grupo.times, turnos);
-
         const jogosFormatados = jogosGrupo.map(j => ({
             ...j,
             grupo: grupo.nome,
             grupoIndex: idx
         }));
-
         todosJogos = [...todosJogos, ...jogosFormatados];
     });
-
     return todosJogos;
 }
 
 export function gerarJogosMataMata(timesPareados, turnos, nomeFase = 'Fase 1', rodadaInicial = 1, confrontoIdInicial = 1) {
     const jogosGerados = [];
     let numeroConfronto = confrontoIdInicial;
-
     for (let i = 0; i < timesPareados.length; i += 2) {
         if (i + 1 >= timesPareados.length) break;
-
         const timeA = timesPareados[i];
         const timeB = timesPareados[i+1];
-
         jogosGerados.push({
             id: crypto.randomUUID(),
             rodada: rodadaInicial, 
@@ -95,7 +82,6 @@ export function gerarJogosMataMata(timesPareados, turnos, nomeFase = 'Fase 1', r
             timeB: { id: timeB.id, nome: timeB.nome, escudo: timeB.escudo },
             golsA: null, golsB: null, finalizado: false
         });
-
         if (turnos === 2) {
            jogosGerados.push({
             id: crypto.randomUUID(),
@@ -108,62 +94,70 @@ export function gerarJogosMataMata(timesPareados, turnos, nomeFase = 'Fase 1', r
             golsA: null, golsB: null, finalizado: false
           });
         }
-        
         numeroConfronto++;
     }
-
     return jogosGerados;
 }
 
 export function gerarJogosProximaFaseMataMata(vencedores, turnos, rodadaAtualMax) {
     const totalTimes = vencedores.length;
     let nomeNovaFase = '';
-
     if (totalTimes === 8) nomeNovaFase = 'Quartas de Final';
     else if (totalTimes === 4) nomeNovaFase = 'Semifinal';
     else if (totalTimes === 2) nomeNovaFase = 'Final';
     else nomeNovaFase = `Fase de ${totalTimes}`;
-
     const novaRodadaInicial = rodadaAtualMax + 1;
     const novoConfrontoId = Date.now(); 
-
     return gerarJogosMataMata(vencedores, turnos, nomeNovaFase, novaRodadaInicial, novoConfrontoId);
 }
 
-// NOVA FUNÇÃO: Gera o cruzamento inicial do Mata-Mata vindo de Grupos
+// === CORREÇÃO AQUI ===
 export function gerarJogosMataMataDeGrupos(classificadosPorGrupo, turnos, rodadaAtualMax) {
-    // classificadosPorGrupo: Objeto onde a chave é o nome do grupo e o valor é array de times ordenados
-    // Ex: { 'Grupo A': [1ºA, 2ºA], 'Grupo B': [1ºB, 2ºB] }
+    // classificadosPorGrupo: { 'Grupo A': [1º, 2º, 3º, 4º], 'Grupo B': [1º, 2º, 3º, 4º] }
     
     const nomesGrupos = Object.keys(classificadosPorGrupo).sort();
     const timesCruzados = [];
 
-    // Lógica de Cruzamento Olímpico (1º de um x 2º do outro)
-    // Agrupamos grupos vizinhos: A x B, C x D, etc.
+    // Agrupa grupos em pares (A x B, C x D)
     for (let i = 0; i < nomesGrupos.length; i += 2) {
-        const g1 = classificadosPorGrupo[nomesGrupos[i]];     // Ex: Grupo A
-        const g2 = classificadosPorGrupo[nomesGrupos[i+1]];   // Ex: Grupo B
+        const nomeG1 = nomesGrupos[i];
+        const nomeG2 = nomesGrupos[i+1];
 
+        // Se tivermos um número ímpar de grupos, o último sobra (falha de segurança)
+        if (!nomeG2) break;
+
+        const g1 = classificadosPorGrupo[nomeG1]; // Times do Grupo A
+        const g2 = classificadosPorGrupo[nomeG2]; // Times do Grupo B
+
+        // Garante que ambos têm times classificados
         if (g1 && g2) {
-            // Assume que g1 e g2 tem o mesmo tamanho de classificados (ex: 2 cada)
-            // 1º A x 2º B
-            if (g1[0] && g2[1]) {
-                timesCruzados.push(g1[0]);
-                timesCruzados.push(g2[1]);
+            const qtd = Math.min(g1.length, g2.length);
+            
+            // Lógica de Cruzamento: 1º vs Último, 2º vs Penúltimo, etc.
+            // Ex: Se classificam 4:
+            // 1º A x 4º B
+            // 2º A x 3º B
+            // 3º A x 2º B
+            // 4º A x 1º B
+            
+            // Vamos gerar os pares A vs B
+            for (let k = 0; k < qtd; k++) {
+                // Time do Grupo A (do topo para baixo)
+                const timeA = g1[k]; 
+                // Time do Grupo B (do fundo para cima para cruzar forças)
+                const timeB = g2[qtd - 1 - k];
+
+                if (timeA && timeB) {
+                    timesCruzados.push(timeA);
+                    timesCruzados.push(timeB);
+                }
             }
-            // 1º B x 2º A
-            if (g2[0] && g1[1]) {
-                timesCruzados.push(g2[0]);
-                timesCruzados.push(g1[1]);
-            }
-            // Se classificam mais de 2, a lógica teria que expandir, mas por hora foca nisso
         }
     }
 
-    // Se não gerou nada (ex: grupos ímpares ou só 1 classificado), faz um fallback simples
     if (timesCruzados.length === 0) {
+        // Fallback: Se algo der errado (ex: 1 grupo só), joga todos num pote
         const flatTimes = Object.values(classificadosPorGrupo).flat();
-        // Apenas para não quebrar, emparelha sequencial
         return gerarJogosProximaFaseMataMata(flatTimes, turnos, rodadaAtualMax);
     }
 
@@ -172,7 +166,8 @@ export function gerarJogosMataMataDeGrupos(classificadosPorGrupo, turnos, rodada
     if (totalTimes === 16) nomeNovaFase = 'Oitavas de Final';
     else if (totalTimes === 8) nomeNovaFase = 'Quartas de Final';
     else if (totalTimes === 4) nomeNovaFase = 'Semifinal';
-    else nomeNovaFase = 'Fase Eliminatória';
+    else if (totalTimes === 2) nomeNovaFase = 'Final';
+    else nomeNovaFase = `Fase de ${totalTimes}`;
 
     const novaRodadaInicial = rodadaAtualMax + 1;
     const novoConfrontoId = Date.now();

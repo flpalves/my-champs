@@ -141,13 +141,14 @@ export default {
                         jogo.eventos.forEach(evento => {
                             if (evento.tipo === 'GOL') {
                                 // Cria uma chave única combinando Time e Jogador
-                                // Isso previne bugs se dois times tiverem jogadores com mesmo ID (ex: numeros 1 a 11)
                                 const chave = `${evento.timeId}_${evento.jogadorId}`;
 
                                 if (!mapaGols[chave]) {
                                     mapaGols[chave] = {
                                         timeId: evento.timeId,
                                         jogadorId: evento.jogadorId,
+                                        // CORREÇÃO: Salva o nome do snapshot (evento) se existir
+                                        nomeSnapshot: evento.jogador ? evento.jogador.nome : null,
                                         gols: 0
                                     };
                                 }
@@ -163,7 +164,8 @@ export default {
                 // Busca o time na lista de participantes
                 const time = camp.timesParticipantes.find(t => t.id === item.timeId);
 
-                let nomeJogador = 'Desconhecido';
+                // CORREÇÃO: Usa o nome salvo no evento como padrão. Se não tiver, vira "Desconhecido"
+                let nomeJogador = item.nomeSnapshot || 'Desconhecido';
                 let nomeTime = 'Time Removido';
                 let escudoTime = '';
 
@@ -171,10 +173,12 @@ export default {
                     nomeTime = time.nome;
                     escudoTime = time.escudo;
 
-                    // Busca o jogador dentro do elenco do time
-                    const jogador = time.jogadores.find(j => (j.id || j.numero) == item.jogadorId);
-                    if (jogador) {
-                        nomeJogador = jogador.nome;
+                    // Fallback: Se o nome não veio no evento (dados antigos), tenta buscar no elenco atual
+                    if (nomeJogador === 'Desconhecido') {
+                        const jogador = time.jogadores.find(j => (j.id || j.numero) == item.jogadorId);
+                        if (jogador) {
+                            nomeJogador = jogador.nome;
+                        }
                     }
                 }
 
