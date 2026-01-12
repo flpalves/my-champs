@@ -2,7 +2,7 @@
     <div class="container mt-4">
 
         <div v-if="carregando" class="text-center py-5">
-            <BSpinner variant="primary" label="Calculando artilharia..." />
+            <BSpinner variant="primary" label="Carregando estatísticas..." />
         </div>
 
         <div v-else-if="!campeonato">
@@ -13,7 +13,7 @@
         <div v-else>
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h2 class="text-primary fw-bold mb-0">Artilharia</h2>
+                    <h2 class="text-primary fw-bold mb-0">Estatísticas</h2>
                     <span class="text-muted">{{ campeonato.nome }}</span>
                 </div>
                 <BButton variant="outline-secondary" @click="$router.push(`/campeonato/${id}`)">
@@ -21,11 +21,29 @@
                 </BButton>
             </div>
 
+            <ul class="nav nav-tabs nav-justified mb-3">
+                <li class="nav-item">
+                    <a class="nav-link cursor-pointer" 
+                       :class="{ active: abaAtiva === 'GOLS', 'fw-bold': abaAtiva === 'GOLS' }"
+                       @click.prevent="mudarAba('GOLS')">
+                        ⚽ Artilharia
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link cursor-pointer" 
+                       :class="{ active: abaAtiva === 'CRAQUES', 'fw-bold': abaAtiva === 'CRAQUES' }"
+                       @click.prevent="mudarAba('CRAQUES')">
+                        ⭐ Melhores Jogadores (MVP)
+                    </a>
+                </li>
+            </ul>
+
             <BCard class="shadow-sm p-0 overflow-hidden">
 
-                <div v-if="rankingArtilheiros.length === 0" class="text-center py-5 text-muted">
-                    <h4>Nenhum gol marcado ainda.</h4>
-                    <p>A lista de artilheiros aparecerá assim que os primeiros gols forem registrados nas súmulas.</p>
+                <div v-if="listaExibida.length === 0" class="text-center py-5 text-muted">
+                    <h4 v-if="abaAtiva === 'GOLS'">Nenhum gol marcado ainda.</h4>
+                    <h4 v-else>Nenhum craque eleito ainda.</h4>
+                    <p>Os dados aparecerão assim que os jogos forem realizados.</p>
                 </div>
 
                 <div v-else>
@@ -35,11 +53,13 @@
                                 <BTh class="text-center" style="width: 80px;">Pos</BTh>
                                 <BTh>Jogador</BTh>
                                 <BTh>Time</BTh>
-                                <BTh class="text-center" style="width: 100px;">Gols</BTh>
+                                <BTh class="text-center" style="width: 120px;">
+                                    {{ abaAtiva === 'GOLS' ? 'Gols' : 'Prêmios' }}
+                                </BTh>
                             </BTr>
                         </BThead>
                         <BTbody>
-                            <BTr v-for="(jogador, index) in artilheirosPaginados" :key="jogador.chaveUnica">
+                            <BTr v-for="(jogador, index) in listaPaginada" :key="jogador.chaveUnica">
 
                                 <BTd class="text-center fw-bold text-muted">
                                     {{ (paginaAtual - 1) * itensPorPagina + index + 1 }}º
@@ -48,7 +68,10 @@
                                     <span v-else-if="((paginaAtual - 1) * itensPorPagina + index) === 2">🥉</span>
                                 </BTd>
 
-                                <BTd class="fw-bold">{{ jogador.nome }}</BTd>
+                                <BTd class="fw-bold">
+                                    {{ jogador.nome }}
+                                    <span v-if="abaAtiva === 'CRAQUES' && index === 0" class="badge bg-warning text-dark ms-2 small">CRAQUE DA GALERA</span>
+                                </BTd>
 
                                 <BTd>
                                     <div class="d-flex align-items-center">
@@ -60,7 +83,9 @@
                                 </BTd>
 
                                 <BTd class="text-center">
-                                    <span class="badge bg-success fs-6">{{ jogador.gols }}</span>
+                                    <span class="badge fs-6" :class="abaAtiva === 'GOLS' ? 'bg-success' : 'bg-primary'">
+                                        {{ jogador.total }} {{ abaAtiva === 'GOLS' ? '⚽' : '⭐' }}
+                                    </span>
                                 </BTd>
 
                             </BTr>
@@ -69,8 +94,8 @@
                 </div>
             </BCard>
 
-            <div class="d-flex justify-content-center mt-4" v-if="rankingArtilheiros.length > itensPorPagina">
-                <BPagination v-model="paginaAtual" :total-rows="rankingArtilheiros.length" :per-page="itensPorPagina"
+            <div class="d-flex justify-content-center mt-4" v-if="listaExibida.length > itensPorPagina">
+                <BPagination v-model="paginaAtual" :total-rows="listaExibida.length" :per-page="itensPorPagina"
                     first-number last-number prev-text="Anterior" next-text="Próxima" />
             </div>
 
@@ -89,26 +114,32 @@ export default {
     components: {
         BCard, BButton, BSpinner, BTableSimple, BThead, BTbody, BTr, BTh, BTd, BAlert, BPagination
     },
-    props: {
-        // id: { type: [String, Number], required: true }
-    },
     data() {
         return {
             id: '',
             carregando: true,
             campeonato: null,
-            rankingArtilheiros: [], // Lista completa ordenada
-
-            // Paginação
+            
+            // Dados
+            rankingArtilheiros: [],
+            rankingCraques: [],
+            
+            // Controle de Interface
+            abaAtiva: 'GOLS', // 'GOLS' ou 'CRAQUES'
             paginaAtual: 1,
             itensPorPagina: 20
         }
     },
     computed: {
-        artilheirosPaginados() {
+        // Define qual lista mostrar com base na aba
+        listaExibida() {
+            return this.abaAtiva === 'GOLS' ? this.rankingArtilheiros : this.rankingCraques;
+        },
+        // Pagina a lista ativa
+        listaPaginada() {
             const inicio = (this.paginaAtual - 1) * this.itensPorPagina;
             const fim = inicio + this.itensPorPagina;
-            return this.rankingArtilheiros.slice(inicio, fim);
+            return this.listaExibida.slice(inicio, fim);
         }
     },
     async mounted() {
@@ -116,6 +147,11 @@ export default {
         await this.carregarECalcular();
     },
     methods: {
+        mudarAba(novaAba) {
+            this.abaAtiva = novaAba;
+            this.paginaAtual = 1; // Reseta paginação ao trocar de aba
+        },
+
         async carregarECalcular() {
             this.carregando = true;
             try {
@@ -123,48 +159,74 @@ export default {
                 if (camp) {
                     this.campeonato = camp;
                     this.calcularArtilharia(camp);
+                    this.calcularCraques(camp); // Calcula o novo ranking
                 }
             } catch (error) {
-                console.error("Erro ao calcular artilharia:", error);
+                console.error("Erro ao calcular estatísticas:", error);
             } finally {
                 this.carregando = false;
             }
         },
 
+        // --- CÁLCULO DE GOLS ---
         calcularArtilharia(camp) {
-            const mapaGols = {}; // Chave será "timeId_jogadorId"
+            const mapa = {}; 
 
-            // 1. Iterar sobre todos os jogos e eventos
             if (camp.jogos) {
                 camp.jogos.forEach(jogo => {
                     if (jogo.eventos) {
                         jogo.eventos.forEach(evento => {
                             if (evento.tipo === 'GOL') {
-                                // Cria uma chave única combinando Time e Jogador
                                 const chave = `${evento.timeId}_${evento.jogadorId}`;
-
-                                if (!mapaGols[chave]) {
-                                    mapaGols[chave] = {
+                                if (!mapa[chave]) {
+                                    mapa[chave] = {
                                         timeId: evento.timeId,
                                         jogadorId: evento.jogadorId,
-                                        // CORREÇÃO: Salva o nome do snapshot (evento) se existir
                                         nomeSnapshot: evento.jogador ? evento.jogador.nome : null,
-                                        gols: 0
+                                        total: 0
                                     };
                                 }
-                                mapaGols[chave].gols++;
+                                mapa[chave].total++;
                             }
                         });
                     }
                 });
             }
+            this.rankingArtilheiros = this.formatarEOrdenar(mapa, camp);
+        },
 
-            // 2. Enriquecer os dados (Buscar Nome e Escudo)
-            const listaFinal = Object.values(mapaGols).map(item => {
-                // Busca o time na lista de participantes
+        // --- CÁLCULO DE CRAQUES (NOVO) ---
+        calcularCraques(camp) {
+            const mapa = {};
+
+            if (camp.jogos) {
+                camp.jogos.forEach(jogo => {
+                    // Verifica se existe craque definido no jogo
+                    // Na Súmula, salvamos em: jogo.craque (objeto) e jogo.craqueTimeId (id)
+                    if (jogo.craque && jogo.craqueTimeId) {
+                        
+                        const chave = `${jogo.craqueTimeId}_${jogo.craque.id}`;
+                        
+                        if (!mapa[chave]) {
+                            mapa[chave] = {
+                                timeId: jogo.craqueTimeId,
+                                jogadorId: jogo.craque.id,
+                                nomeSnapshot: jogo.craque.nome, // Prioriza o nome salvo no momento do jogo
+                                total: 0
+                            };
+                        }
+                        mapa[chave].total++; // Incrementa contador de estrelas
+                    }
+                });
+            }
+            this.rankingCraques = this.formatarEOrdenar(mapa, camp);
+        },
+
+        // --- HELPER COMUM ---
+        formatarEOrdenar(mapaDados, camp) {
+            // Enriquece os dados com infos do time atual
+            const lista = Object.values(mapaDados).map(item => {
                 const time = camp.timesParticipantes.find(t => t.id === item.timeId);
-
-                // CORREÇÃO: Usa o nome salvo no evento como padrão. Se não tiver, vira "Desconhecido"
                 let nomeJogador = item.nomeSnapshot || 'Desconhecido';
                 let nomeTime = 'Time Removido';
                 let escudoTime = '';
@@ -172,13 +234,10 @@ export default {
                 if (time) {
                     nomeTime = time.nome;
                     escudoTime = time.escudo;
-
-                    // Fallback: Se o nome não veio no evento (dados antigos), tenta buscar no elenco atual
+                    // Fallback se não tiver snapshot
                     if (nomeJogador === 'Desconhecido') {
                         const jogador = time.jogadores.find(j => (j.id || j.numero) == item.jogadorId);
-                        if (jogador) {
-                            nomeJogador = jogador.nome;
-                        }
+                        if (jogador) nomeJogador = jogador.nome;
                     }
                 }
 
@@ -187,17 +246,28 @@ export default {
                     nome: nomeJogador,
                     nomeTime: nomeTime,
                     escudoTime: escudoTime,
-                    gols: item.gols
+                    total: item.total
                 };
             });
 
-            // 3. Ordenar (Maior número de gols primeiro)
-            // Desempate: Ordem alfabética do nome
-            this.rankingArtilheiros = listaFinal.sort((a, b) => {
-                if (b.gols !== a.gols) return b.gols - a.gols;
+            // Ordena: Maior total -> Nome Alfabético
+            return lista.sort((a, b) => {
+                if (b.total !== a.total) return b.total - a.total;
                 return a.nome.localeCompare(b.nome);
             });
         }
     }
 }
 </script>
+
+<style scoped>
+.cursor-pointer { cursor: pointer; }
+.nav-tabs .nav-link.active {
+    background-color: #fff;
+    border-color: #dee2e6 #dee2e6 #fff;
+    color: #0d6efd;
+}
+.nav-tabs .nav-link {
+    color: #495057;
+}
+</style>
