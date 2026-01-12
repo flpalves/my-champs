@@ -2,7 +2,8 @@ import localforage from 'localforage';
 import {
     gerarJogosPontosCorridos,
     gerarJogosProximaFaseMataMata,
-    gerarJogosMataMataDeGrupos
+    gerarJogosMataMataDeGrupos,
+    gerarJogosMataMataSeedingGeral
 } from '../utils/GeradorTabela.js';
 
 // Configuração inicial do Banco
@@ -321,5 +322,18 @@ export default {
             return { usoMB, totalMB, porcentagem };
         }
         return null;
+    },
+
+    async avancarGruposComSeeding(idCampeonato, listaFinalTimes) {
+        const campeonato = await this.getCampeonatoById(idCampeonato);
+        if (!campeonato) throw new Error("Campeonato não encontrado");
+        const maxRodada = campeonato.jogos.reduce((max, j) => Math.max(max, j.rodada), 0);
+        
+        let novosJogos = gerarJogosMataMataSeedingGeral(listaFinalTimes, campeonato.turnos, maxRodada);
+        novosJogos = novosJogos.map(j => ({ ...j, campeonatoId: idCampeonato }));
+        
+        campeonato.jogos = [...campeonato.jogos, ...novosJogos];
+        await this.atualizarCampeonato(campeonato);
+        return true;
     }
 };
