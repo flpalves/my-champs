@@ -12,55 +12,39 @@
         <div v-else>
             <SumulaHeader 
                 :rodada="jogo.rodada" 
-                :timeA="jogo.timeA" :timeB="jogo.timeB"
+                :timeA="jogo.timeA" :timeB="jogo.timeB" 
                 :golsA="golsA" :golsB="golsB"
-                :uniformeA="jogo.uniformeA" :uniformeB="jogo.uniformeB"
+                :uniformeA="jogo.uniformeA" :uniformeB="jogo.uniformeB" 
                 v-model:dataHora="jogo.dataHora"
                 v-model:abaAtiva="abaAtiva"
-                @voltar="voltar" @salvar="salvarAlteracoes"
+                v-model:nota="jogo.nota" 
+                @voltar="voltar" @salvar="salvarAlteracoes" @sharear="gerarShare"
             />
+           
+            <SocialShareModal v-model="modalShareAberto" :timeA="timeFullA" :timeB="timeFullB" :golsA="golsA"
+                :golsB="golsB" :eventos="jogo.eventos" nomeCampeonato="My Champs" :rodada="jogo.rodada" 
+                :estadio="timeFullA.estadio" :dataHora="jogo.dataHora" />
 
-            <SumulaEventos v-if="abaAtiva === 'EVENTOS'"
-                :timeA="jogo.timeA" :timeB="jogo.timeB"
-                :elencoA="elencoA" :elencoB="elencoB"
-                :titularesA="jogo.titularesA" :titularesB="jogo.titularesB"
-                :jogo="jogo"
-                v-model:ferramentaAtiva="ferramentaAtiva"
-                @aplicar="aplicarAcao"
-            />
+            <SumulaEventos v-if="abaAtiva === 'EVENTOS'" :timeA="jogo.timeA" :timeB="jogo.timeB" :elencoA="elencoA"
+                :elencoB="elencoB" :titularesA="jogo.titularesA" :titularesB="jogo.titularesB" :jogo="jogo"
+                v-model:ferramentaAtiva="ferramentaAtiva" @aplicar="aplicarAcao" />
 
-            <SumulaTimeline v-if="abaAtiva === 'TIMELINE'"
-                :eventos="jogo.eventos"
-                :substituicoes="jogo.substituicoes"
-                :timeA="jogo.timeA" :timeB="jogo.timeB"
-                @remover="removerItemTimeline"
-            />
+            <SumulaTimeline v-if="abaAtiva === 'TIMELINE'" :eventos="jogo.eventos" :substituicoes="jogo.substituicoes"
+                :timeA="jogo.timeA" :timeB="jogo.timeB" @remover="removerItemTimeline" />
 
-            <SumulaEscalacao v-if="abaAtiva === 'ESCALACAO'"
-                :timeA="jogo.timeA" :timeB="jogo.timeB"
-                :elencoA="elencoA" :elencoB="elencoB"
-                :titularesA="jogo.titularesA" :titularesB="jogo.titularesB"
-                @toggleTitular="toggleTitular"
-                @selecionarTodos="selecionarTodos"
-                @selecionarNenhum="selecionarNenhum"
-            />
+            <SumulaEscalacao v-if="abaAtiva === 'ESCALACAO'" :timeA="jogo.timeA" :timeB="jogo.timeB" :elencoA="elencoA"
+                :elencoB="elencoB" :titularesA="jogo.titularesA" :titularesB="jogo.titularesB"
+                @toggleTitular="toggleTitular" @selecionarTodos="selecionarTodos"
+                @selecionarNenhum="selecionarNenhum" />
 
-            <SumulaSubstituicoes v-if="abaAtiva === 'SUBS'"
-                :timeA="jogo.timeA" :timeB="jogo.timeB"
-                :elencoA="elencoA" :elencoB="elencoB"
-                :titularesA="jogo.titularesA" :titularesB="jogo.titularesB"
-                :substituicoes="jogo.substituicoes"
-                :subTempA="subTempA" :subTempB="subTempB"
-                @realizarSubstituicao="realizarSubstituicao"
-                @removerSubstituicao="removerSubstituicao"
-            />
+            <SumulaSubstituicoes v-if="abaAtiva === 'SUBS'" :timeA="jogo.timeA" :timeB="jogo.timeB" :elencoA="elencoA"
+                :elencoB="elencoB" :titularesA="jogo.titularesA" :titularesB="jogo.titularesB"
+                :substituicoes="jogo.substituicoes" :subTempA="subTempA" :subTempB="subTempB"
+                @realizarSubstituicao="realizarSubstituicao" @removerSubstituicao="removerSubstituicao" />
 
-            <SumulaUniformes v-if="abaAtiva === 'UNIFORMES'"
-                :timeA="jogo.timeA" :timeB="jogo.timeB"
-                :uniformeA="jogo.uniformeA" :uniformeB="jogo.uniformeB"
-                :timeFullA="timeFullA" :timeFullB="timeFullB"
-                @selecionar="selecionarUniforme"
-            />
+            <SumulaUniformes v-if="abaAtiva === 'UNIFORMES'" :timeA="jogo.timeA" :timeB="jogo.timeB"
+                :uniformeA="jogo.uniformeA" :uniformeB="jogo.uniformeB" :timeFullA="timeFullA" :timeFullB="timeFullB"
+                @selecionar="selecionarUniforme" />
         </div>
     </div>
 </template>
@@ -75,19 +59,21 @@ import SumulaTimeline from '@/components/sumula/SumulaTimeline.vue';
 import SumulaEscalacao from '@/components/sumula/SumulaEscalacao.vue';
 import SumulaSubstituicoes from '@/components/sumula/SumulaSubstituicoes.vue';
 import SumulaUniformes from '@/components/sumula/SumulaUniformes.vue';
+import SocialShareModal from '@/views/SocialShareModal.vue';
 
 export default {
     name: 'SumulaJogo',
-    components: { 
+    components: {
         BSpinner, BButton, BAlert,
-        SumulaHeader, SumulaEventos, SumulaTimeline, 
-        SumulaEscalacao, SumulaSubstituicoes, SumulaUniformes
+        SumulaHeader, SumulaEventos, SumulaTimeline,
+        SumulaEscalacao, SumulaSubstituicoes, SumulaUniformes, SocialShareModal
     },
     data() {
         return {
             carregando: true,
             abaAtiva: 'EVENTOS',
             jogo: null,
+            modalShareAberto: false,
             timeFullA: {}, timeFullB: {},
             elencoA: [], elencoB: [],
             ferramentaAtiva: null,
@@ -127,23 +113,22 @@ export default {
                 jogoEncontrado.titularesA = jogoEncontrado.titularesA || [];
                 jogoEncontrado.titularesB = jogoEncontrado.titularesB || [];
                 jogoEncontrado.dataHora = jogoEncontrado.dataHora || '';
-                jogoEncontrado.craque = jogoEncontrado.craque || null; 
+                jogoEncontrado.craque = jogoEncontrado.craque || null;
                 jogoEncontrado.uniformeA = jogoEncontrado.uniformeA || null;
                 jogoEncontrado.uniformeB = jogoEncontrado.uniformeB || null;
+                
+                // Inicializa a nota se não existir
+                jogoEncontrado.nota = jogoEncontrado.nota || 0;
 
-                // Carrega times ATUAIS do banco (com as cores novas)
                 const timeGlobalA = await DbService.getTimeById(jogoEncontrado.timeA.id);
                 const timeGlobalB = await DbService.getTimeById(jogoEncontrado.timeB.id);
-                
+
                 const snapA = camp.timesParticipantes.find(t => t.id === jogoEncontrado.timeA.id) || {};
                 const snapB = camp.timesParticipantes.find(t => t.id === jogoEncontrado.timeB.id) || {};
 
                 this.timeFullA = timeGlobalA || snapA;
                 this.timeFullB = timeGlobalB || snapB;
 
-                // CORREÇÃO CRÍTICA:
-                // Se o time salvo no jogo (snapshot) não tiver cores, mas o time atual tiver,
-                // injetamos as cores no snapshot do jogo para que os outros componentes vejam.
                 if ((!jogoEncontrado.timeA.cores || jogoEncontrado.timeA.cores.length === 0) && this.timeFullA.cores) {
                     jogoEncontrado.timeA.cores = this.timeFullA.cores;
                 }
@@ -199,7 +184,7 @@ export default {
                     id: Date.now(),
                     tipo: this.ferramentaAtiva,
                     jogador: snapshot,
-                    jogadorId: snapshot.id, 
+                    jogadorId: snapshot.id,
                     timeId: timeId,
                     minuto: null
                 });
@@ -208,7 +193,7 @@ export default {
         },
 
         async removerItemTimeline(item) {
-            if(!confirm("Remover item?")) return;
+            if (!confirm("Remover item?")) return;
             if (item.categoria === 'SUBS') {
                 this.jogo.substituicoes = this.jogo.substituicoes.filter(s => s.id !== item.id);
             } else {
@@ -260,6 +245,9 @@ export default {
             });
             temp.saiId = null; temp.entraId = null;
             await this.salvarAlteracoes();
+        },
+        gerarShare(){
+            this.modalShareAberto = true;
         },
 
         voltar() { this.$router.push(`/campeonato/${this.idCampeonato}`); }

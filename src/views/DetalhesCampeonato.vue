@@ -519,4 +519,8 @@ input[type=number] {
 .cursor-pointer {
     cursor: pointer;
 }
+.form-control:disabled{
+    opacity: 0.25 ;
+    color:#000;
+}
 </style>
