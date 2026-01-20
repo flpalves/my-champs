@@ -18,12 +18,56 @@
                 <option value="PONTOS_CORRIDOS">Pontos Corridos</option>
                 <option value="MATA_MATA">Mata-Mata (Eliminatória)</option>
                 <option value="GRUPOS">Fase de Grupos</option>
+                <option value="LIGA_COM_FINAL">Liga + Fase Final</option>
               </BFormSelect>
             </BFormGroup>
           </BCol>
         </BRow>
 
         <div class="bg-secondary bg-opacity-25 p-3 rounded mb-4 border border-secondary">
+
+
+          <div v-if="campeonato.tipo === 'LIGA_COM_FINAL'">
+            <BRow>
+              <BCol md="3">
+                <BFormGroup label="Turnos (1ª Fase):" class="text-white">
+                  <BFormSelect v-model="campeonato.turnos" class="bg-dark text-white border-secondary">
+                    <option :value="1">Turno Único</option>
+                    <option :value="2">Ida e Volta</option>
+                  </BFormSelect>
+                </BFormGroup>
+              </BCol>
+
+              <BCol md="3">
+                <BFormGroup label="Turnos (2ª Fase):" class="text-white">
+                  <BFormSelect v-model="configLiga.turnosFaseFinal" class="bg-dark text-white border-secondary">
+                    <option :value="1">Turno Único</option>
+                    <option :value="2">Ida e Volta</option>
+                  </BFormSelect>
+                </BFormGroup>
+              </BCol>
+
+              <BCol md="3">
+                <BFormGroup label="Classificam p/ Final:" class="text-white">
+                  <BFormInput type="number" min="2" v-model.number="configLiga.qtdClassificados"
+                    class="bg-dark text-white border-secondary" />
+                </BFormGroup>
+              </BCol>
+
+              <BCol md="3">
+                <BFormGroup label="Pontuação na Final:" class="text-white">
+                  <BFormSelect v-model="configLiga.zerarPontos" class="bg-dark text-white border-secondary">
+                    <option :value="true">Zerar Pontos (Começa do 0)</option>
+                    <option :value="false">Manter Pontos (Acumulativo)</option>
+                  </BFormSelect>
+                </BFormGroup>
+              </BCol>
+            </BRow>
+            <BAlert show variant="info" class="mt-2 py-2 small bg-dark border-info text-info">
+              Ex: Um campeonato onde todos jogam contra todos, e os <strong>{{ configLiga.qtdClassificados }}</strong>
+              melhores fazem um novo mini-campeonato (Quadrangular/Hexagonal) para decidir o campeão.
+            </BAlert>
+          </div>
 
           <div v-if="campeonato.tipo === 'PONTOS_CORRIDOS'">
             <BRow>
@@ -118,33 +162,36 @@
 
               <BCol md="9" class="border-start border-secondary ps-4">
                 <label class="text-white mb-2 fw-bold">Regra de Classificação (Pós-Grupos):</label>
-                
+
                 <div class="d-flex flex-column gap-3">
-                  <div class="form-check p-2 rounded bg-secondary bg-opacity-10 border border-secondary" :class="{'border-primary': configGrupos.modoKnockout === 'PADRAO'}">
+                  <div class="form-check p-2 rounded bg-secondary bg-opacity-10 border border-secondary"
+                    :class="{ 'border-primary': configGrupos.modoKnockout === 'PADRAO' }">
                     <input class="form-check-input" type="radio" name="modoKnockout" id="modoPadrao" value="PADRAO"
                       v-model="configGrupos.modoKnockout">
                     <label class="form-check-label text-white fw-bold" for="modoPadrao">
                       Padrão (Completar Chave)
                     </label>
                     <div class="ms-2 mt-1">
-                       <div class="form-check form-switch">
-                          <input class="form-check-input" type="checkbox" id="checkRepescagem"
-                            v-model="configGrupos.usarRepescagem" :disabled="configGrupos.modoKnockout !== 'PADRAO'">
-                          <label class="form-check-label text-white-50 small" for="checkRepescagem">
-                            Ativar Repescagem (Classificar melhores 3ºs se necessário)
-                          </label>
-                        </div>
+                      <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="checkRepescagem"
+                          v-model="configGrupos.usarRepescagem" :disabled="configGrupos.modoKnockout !== 'PADRAO'">
+                        <label class="form-check-label text-white-50 small" for="checkRepescagem">
+                          Ativar Repescagem (Classificar melhores 3ºs se necessário)
+                        </label>
+                      </div>
                     </div>
                   </div>
 
-                  <div class="form-check p-2 rounded bg-secondary bg-opacity-10 border border-secondary" :class="{'border-primary': configGrupos.modoKnockout === 'BYE'}">
+                  <div class="form-check p-2 rounded bg-secondary bg-opacity-10 border border-secondary"
+                    :class="{ 'border-primary': configGrupos.modoKnockout === 'BYE' }">
                     <input class="form-check-input" type="radio" name="modoKnockout" id="modoBye" value="BYE"
                       v-model="configGrupos.modoKnockout">
                     <label class="form-check-label text-white fw-bold" for="modoBye">
                       Sistema "Bye" (Rodada Preliminar)
                     </label>
                     <small class="d-block text-muted ms-2 mt-1">
-                      Os melhores 1º colocados folgam. Os restantes disputam um Playoff para completar a chave. Ideal para 6, 12 ou 24 classificados.
+                      Os melhores 1º colocados folgam. Os restantes disputam um Playoff para completar a chave. Ideal
+                      para 6, 12 ou 24 classificados.
                     </small>
                   </div>
                 </div>
@@ -301,8 +348,10 @@
               <BAlert show variant="warning" class="mt-2 small text-center bg-dark border-warning text-warning"
                 v-if="configGrupos.classificadosPorGrupo">
                 Os <strong>{{ configGrupos.classificadosPorGrupo }}</strong> melhores de cada grupo avançam direto.
-                <span v-if="configGrupos.modoKnockout === 'PADRAO' && configGrupos.usarRepescagem"><br>+ Melhores não-classificados para fechar a chave (Repescagem).</span>
-                <span v-if="configGrupos.modoKnockout === 'BYE'"><br>Sistema BYE ativo: Melhores folgam, restantes jogam preliminar.</span>
+                <span v-if="configGrupos.modoKnockout === 'PADRAO' && configGrupos.usarRepescagem"><br>+ Melhores
+                  não-classificados para fechar a chave (Repescagem).</span>
+                <span v-if="configGrupos.modoKnockout === 'BYE'"><br>Sistema BYE ativo: Melhores folgam, restantes jogam
+                  preliminar.</span>
               </BAlert>
             </div>
           </div>
@@ -357,6 +406,12 @@ export default {
         modoKnockout: 'PADRAO', // 'PADRAO' ou 'BYE'
         potes: [{ times: [] }, { times: [] }],
         gruposManuais: []
+      },
+
+      configLiga: {
+        turnosFaseFinal: 1,
+        qtdClassificados: 4,
+        zerarPontos: true
       },
 
       auxiliares: {
@@ -420,6 +475,7 @@ export default {
         potes: [{ times: [] }, { times: [] }],
         gruposManuais: []
       };
+      this.configLiga = { turnosFaseFinal: 1, qtdClassificados: 4, zerarPontos: true };
     },
     resetarPreviews() {
       this.previewJogos = [];
@@ -558,7 +614,13 @@ export default {
         usarRepescagem: this.campeonato.tipo === 'GRUPOS' ? this.configGrupos.usarRepescagem : false,
         modoKnockout: this.campeonato.tipo === 'GRUPOS' ? this.configGrupos.modoKnockout : 'PADRAO', // <--- SALVO AQUI
         grupos: this.campeonato.tipo === 'GRUPOS' ? this.previewGrupos : [],
-        jogos: (this.campeonato.tipo !== 'PONTOS_CORRIDOS') ? this.previewJogos : []
+        jogos: (this.campeonato.tipo === 'PONTOS_CORRIDOS' || this.campeonato.tipo === 'LIGA_COM_FINAL')
+          ? gerarJogosGrupos([{ times: this.timesSelecionadosObj }], this.campeonato.turnos) // Reutiliza gerador simples 
+          : this.previewJogos,
+        turnosFaseFinal: this.campeonato.tipo === 'LIGA_COM_FINAL' ? parseInt(this.configLiga.turnosFaseFinal) : null,
+        qtdClassificados: this.campeonato.tipo === 'LIGA_COM_FINAL' ? parseInt(this.configLiga.qtdClassificados) : null,
+        zerarPontos: this.campeonato.tipo === 'LIGA_COM_FINAL' ? Boolean(this.configLiga.zerarPontos) : false,
+
       };
 
       try {

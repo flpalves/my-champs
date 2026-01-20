@@ -43,9 +43,9 @@ export function gerarRoundRobin(times, turnos) {
         }
         const ultimo = listaTimes.pop();
         listaTimes.splice(1, 0, ultimo);
-    }
+    } 
 
-    if (turnos === 2) {
+    if (parseInt(turnos) === 2) {
         const jogosReturno = jogosGerados.map(jogo => ({
             ...jogo,
             id: crypto.randomUUID(),
@@ -339,6 +339,23 @@ export function gerarJogosComByeSystem(timesClassificados, turnos, rodadaAtualMa
     });
 
     return jogosGerados;
+}
+
+export function gerarJogosFaseFinalPontosCorridos(timesClassificados, turnos, rodadaAtualMax) {
+    // Reutiliza a lógica de Round Robin (Todos contra Todos)
+    // Mas ajusta os metadados para identificar que é uma Fase Final
+    const jogosBase = gerarRoundRobin(timesClassificados, turnos);
+    
+    const novaRodadaInicial = rodadaAtualMax + 1;
+    const jogosAjustados = jogosBase.map(jogo => ({
+        ...jogo,
+        id: crypto.randomUUID(), // Garante IDs novos
+        rodada: jogo.rodada + novaRodadaInicial - 1, // Ajusta offset da rodada
+        fase: 'Fase Final', // Marcador importante para o filtro de pontos
+        confrontoId: null // Pontos corridos não tem confrontoId
+    }));
+
+    return jogosAjustados;
 }
 
 export const gerarTabela = gerarRoundRobin;

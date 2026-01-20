@@ -3,30 +3,156 @@ import {
     gerarJogosPontosCorridos,
     gerarJogosProximaFaseMataMata,
     gerarJogosMataMataDeGrupos,
-    gerarJogosMataMataSeedingGeral
+    gerarJogosMataMataSeedingGeral,
+    gerarJogosFaseFinalPontosCorridos
 } from '../utils/GeradorTabela.js';
 
-// Configuração inicial do Banco
+// Configuração base
 localforage.config({
     name: 'GeradorCampeonatoApp',
     storeName: 'dados_campeonato',
-    description: 'Armazenamento de times e campeonatos'
+    description: 'Armazenamento Multi-Mundos'
 });
 
-// Chaves para organizar os dados
-// ATENÇÃO: Removemos a lista_jogos para forçar o armazenamento embutido
-const KEYS = {
+// === CHAVES DO SISTEMA (Globais) ===
+const SYSTEM_KEYS = {
+    SLOTS: 'sys_available_slots', // Lista de mundos
+    ACTIVE_SLOT: 'sys_active_slot_id' // ID do mundo ativo
+};
+
+// === CHAVES DE DADOS (Serão prefixadas) ===
+const DATA_KEYS = {
     TIMES: 'lista_times',
     CAMPEONATOS: 'lista_campeonatos'
 };
 
 export default {
     // =================================================================
-    // MÉTODOS PARA TIMES
+    // 1. GERENCIAMENTO DE SLOTS (MUNDOS) E MIGRAÇÃO
+    // =================================================================
+
+    async getActiveSlotId() {
+        try {
+            let activeId = await localforage.getItem(SYSTEM_KEYS.ACTIVE_SLOT);
+            
+            // Se activeId é null, significa que é a primeira vez rodando a versão Multi-Mundos
+            if (activeId === null) {
+                console.log("🔍 Nenhum slot ativo detectado. Verificando migração...");
+                await this.inicializarSistemaSlots();
+                activeId = 0; // Define o Slot 0 (Principal) como ativo após migrar
+            }
+            return activeId;
+        } catch (e) {
+            console.error("Erro ao obter Slot ID:", e);
+            return 0; // Fallback de segurança
+        }
+    },
+
+    async getSlots() {
+        const slots = await localforage.getItem(SYSTEM_KEYS.SLOTS);
+        return slots || [];
+    },
+
+    // --- LÓGICA DE MIGRAÇÃO (GARANTE COMPATIBILIDADE) ---
+    async inicializarSistemaSlots() {
+        console.log("⚙️ Inicializando sistema de Slots...");
+        
+        // 1. Tenta buscar os dados no formato antigo (Raiz)
+        // Isso bate exatamente com o padrão que você enviou: "lista_campeonatos" e "lista_times"
+        const timesAntigos = await localforage.getItem('lista_times');
+        const campsAntigos = await localforage.getItem('lista_campeonatos');
+
+        // 2. Cria a estrutura do Slot 0 (Mundo Principal)
+        const slotPadrao = { 
+            id: 0, 
+            alias: 'Mundo Principal', 
+            criadoEm: new Date().toISOString() 
+        };
+        
+        // Salva a lista de slots e define o ativo
+        await localforage.setItem(SYSTEM_KEYS.SLOTS, [slotPadrao]);
+        await localforage.setItem(SYSTEM_KEYS.ACTIVE_SLOT, 0);
+
+        // 3. Se existirem dados antigos, move para o prefixo "slot_0_"
+        if (timesAntigos || campsAntigos) {
+            console.log("📦 DADOS LEGADOS ENCONTRADOS. Migrando para Slot 0...");
+            
+            if (timesAntigos) {
+                console.log(`--> Migrando ${timesAntigos.length} times.`);
+                await localforage.setItem(`slot_0_${DATA_KEYS.TIMES}`, timesAntigos);
+            }
+            
+            if (campsAntigos) {
+                console.log(`--> Migrando ${campsAntigos.length} campeonatos.`);
+                await localforage.setItem(`slot_0_${DATA_KEYS.CAMPEONATOS}`, campsAntigos);
+            }
+            
+            // 4. Limpa as chaves antigas para evitar duplicidade e confusão futura
+            // Opcional: Você pode comentar essas linhas se quiser manter um backup "fantasma" na raiz por enquanto
+            await localforage.removeItem('lista_times');
+            await localforage.removeItem('lista_campeonatos');
+            
+            console.log("✅ Migração concluída com sucesso.");
+        } else {
+            console.log("✨ Nenhum dado legado encontrado. Iniciando limpo.");
+        }
+    },
+
+    // Cria um novo mundo
+    async criarSlot(alias) {
+        const slots = await this.getSlots();
+        const newId = Date.now(); 
+        
+        const novoSlot = {
+            id: newId,
+            alias: alias,
+            criadoEm: new Date().toISOString()
+        };
+
+        slots.push(novoSlot);
+        await localforage.setItem(SYSTEM_KEYS.SLOTS, slots);
+        return newId;
+    },
+
+    // Troca o mundo atual
+    async trocarSlot(idSlot) {
+        const slots = await this.getSlots();
+        // Permite trocar se o slot existe OU se for o slot 0 (padrão)
+        if (!slots.find(s => s.id === idSlot) && idSlot !== 0) return;
+
+        await localforage.setItem(SYSTEM_KEYS.ACTIVE_SLOT, idSlot);
+        window.location.reload(); // Recarrega para limpar memória do Vue
+    },
+
+    // Exclui um mundo
+    async excluirSlot(idSlot) {
+        const slots = await this.getSlots();
+        const activeId = await this.getActiveSlotId();
+
+        if (idSlot === activeId) {
+            throw new Error("Não é possível excluir o mundo ativo. Troque de mundo antes.");
+        }
+
+        const novaLista = slots.filter(s => s.id !== idSlot);
+        await localforage.setItem(SYSTEM_KEYS.SLOTS, novaLista);
+
+        const prefixo = `slot_${idSlot}_`;
+        await localforage.removeItem(prefixo + DATA_KEYS.TIMES);
+        await localforage.removeItem(prefixo + DATA_KEYS.CAMPEONATOS);
+    },
+
+    async _getPrefix() {
+        const id = await this.getActiveSlotId();
+        return `slot_${id}_`;
+    },
+
+    // =================================================================
+    // 2. MÉTODOS DE DADOS (TODOS AGORA USAM O PREFIXO)
     // =================================================================
 
     async getTimes() {
-        const times = await localforage.getItem(KEYS.TIMES);
+        const prefix = await this._getPrefix();
+        const times = await localforage.getItem(prefix + DATA_KEYS.TIMES);
         return times || [];
     },
 
@@ -35,7 +161,9 @@ export default {
         const timeLimpo = JSON.parse(JSON.stringify(novoTime));
         timeLimpo.id = Date.now() + Math.random().toString(36).substr(2, 9);
         timesAtuais.push(timeLimpo);
-        return await localforage.setItem(KEYS.TIMES, timesAtuais);
+        
+        const prefix = await this._getPrefix();
+        return await localforage.setItem(prefix + DATA_KEYS.TIMES, timesAtuais);
     },
 
     async getTimeById(id) {
@@ -46,38 +174,35 @@ export default {
     async atualizarTime(timeAtualizado) {
         const times = await this.getTimes();
         const index = times.findIndex(t => t.id == timeAtualizado.id);
+        const prefix = await this._getPrefix();
 
         if (index !== -1) {
             times[index] = JSON.parse(JSON.stringify(timeAtualizado));
-            return await localforage.setItem(KEYS.TIMES, times);
+            return await localforage.setItem(prefix + DATA_KEYS.TIMES, times);
         } else {
             throw new Error("Time não encontrado");
         }
     },
 
     async limparTimes() {
-        return await localforage.removeItem(KEYS.TIMES);
+        const prefix = await this._getPrefix();
+        return await localforage.removeItem(prefix + DATA_KEYS.TIMES);
     },
 
-    // =================================================================
-    // MÉTODOS PARA CAMPEONATOS (JOGOS EMBUTIDOS)
-    // =================================================================
+    // --- CAMPEONATOS ---
 
     async getCampeonatos() {
-        const camps = await localforage.getItem(KEYS.CAMPEONATOS);
+        const prefix = await this._getPrefix();
+        const camps = await localforage.getItem(prefix + DATA_KEYS.CAMPEONATOS);
         return camps || [];
     },
 
     async getCampeonatoById(id) {
         const lista = await this.getCampeonatos();
-        // Retorna o objeto campeonato completo (que já contém os jogos dentro)
         const camp = lista.find(c => String(c.id) === String(id));
-
-        // Garante a ordenação dos jogos se eles existirem
         if (camp && camp.jogos) {
             camp.jogos.sort((a, b) => a.rodada - b.rodada);
         }
-
         return camp;
     },
 
@@ -85,216 +210,147 @@ export default {
         const idCampeonato = Date.now();
         let tabelaJogos = [];
 
-        // 1. Define os jogos (já vindos do front ou gerados agora)
         if (dadosBasicos.jogos && dadosBasicos.jogos.length > 0) {
             tabelaJogos = dadosBasicos.jogos;
         } else {
-            // Caso contrário (Pontos Corridos padrão), gera aqui.
             tabelaJogos = gerarJogosPontosCorridos(dadosBasicos.times, dadosBasicos.turnos);
         }
 
-        // 2. Vincula ID (apenas por segurança)
         tabelaJogos = tabelaJogos.map(jogo => ({
             ...jogo,
             campeonatoId: idCampeonato
         }));
 
-        // 3. Monta o objeto completo
         const novoCampeonato = {
             id: idCampeonato,
             nome: dadosBasicos.nome,
             tipo: dadosBasicos.tipo || 'PONTOS_CORRIDOS',
-            turnos: dadosBasicos.turnos,
+            turnos: parseInt(dadosBasicos.turnos) || 1, 
             tipoClassificacao: dadosBasicos.tipoClassificacao,
             modoDefinicao: dadosBasicos.modoDefinicao,
+            
+            // Dados de Grupos
             grupos: dadosBasicos.grupos || [],
-            // Salva quantos classificam por grupo (importante para transição)
-            classificadosPorGrupo: dadosBasicos.classificadosPorGrupo || 2,
+            classificadosPorGrupo: parseInt(dadosBasicos.classificadosPorGrupo) || 2,
+            usarRepescagem: dadosBasicos.usarRepescagem || false,
+            modoKnockout: dadosBasicos.modoKnockout || 'PADRAO',
+
+            // === CORREÇÃO: ADICIONANDO OS CAMPOS QUE FALTAVAM ===
+            turnosFaseFinal: dadosBasicos.turnosFaseFinal ? parseInt(dadosBasicos.turnosFaseFinal) : null,
+            qtdClassificados: dadosBasicos.qtdClassificados ? parseInt(dadosBasicos.qtdClassificados) : null,
+            zerarPontos: dadosBasicos.zerarPontos !== undefined ? Boolean(dadosBasicos.zerarPontos) : false,
+            // ====================================================
+
             dataCriacao: new Date().toISOString(),
             status: 'EM_ANDAMENTO',
             timesParticipantes: JSON.parse(JSON.stringify(dadosBasicos.times)),
-            // AQUI: Jogos salvos DENTRO do campeonato
             jogos: JSON.parse(JSON.stringify(tabelaJogos))
         };
 
-        // 4. Salva na lista de campeonatos
         const lista = await this.getCampeonatos();
         lista.push(novoCampeonato);
-        await localforage.setItem(KEYS.CAMPEONATOS, lista);
+        
+        const prefix = await this._getPrefix();
+        await localforage.setItem(prefix + DATA_KEYS.CAMPEONATOS, lista);
 
         return idCampeonato;
     },
 
-    // ATUALIZAR JOGO (BUSCA DENTRO DO CAMPEONATO)
+    async atualizarCampeonato(campAtualizado) {
+        const listaCamps = await this.getCampeonatos();
+        const index = listaCamps.findIndex(c => String(c.id) === String(campAtualizado.id));
+        const prefix = await this._getPrefix();
+
+        if (index !== -1) {
+            listaCamps[index] = JSON.parse(JSON.stringify(campAtualizado));
+            await localforage.setItem(prefix + DATA_KEYS.CAMPEONATOS, listaCamps);
+        } else {
+            throw new Error("Campeonato não encontrado");
+        }
+    },
+
     async atualizarJogo(idCampeonato, jogoAtualizado) {
         const listaCamps = await this.getCampeonatos();
         const indexCamp = listaCamps.findIndex(c => String(c.id) === String(idCampeonato));
+        const prefix = await this._getPrefix(); 
 
         if (indexCamp === -1) throw new Error("Campeonato não encontrado");
 
         const campeonato = listaCamps[indexCamp];
-
-        // Encontra o jogo dentro do array .jogos do campeonato
         const indexJogo = campeonato.jogos.findIndex(j => j.id == jogoAtualizado.id);
 
         if (indexJogo !== -1) {
             campeonato.jogos[indexJogo] = JSON.parse(JSON.stringify(jogoAtualizado));
-
-            // Salva a lista de campeonatos inteira novamente
-            // Isso substitui o objeto antigo pelo novo (com o jogo atualizado dentro)
-            await localforage.setItem(KEYS.CAMPEONATOS, listaCamps);
+            await localforage.setItem(prefix + DATA_KEYS.CAMPEONATOS, listaCamps);
         } else {
             throw new Error("Jogo não encontrado neste campeonato");
         }
     },
 
-    // AVANÇAR FASE (MATA-MATA)
     async avancarFaseMataMata(idCampeonato, vencedores) {
         const listaCamps = await this.getCampeonatos();
         const indexCamp = listaCamps.findIndex(c => String(c.id) === String(idCampeonato));
+        const prefix = await this._getPrefix();
 
         if (indexCamp === -1) throw new Error("Campeonato não encontrado");
 
         const campeonato = listaCamps[indexCamp];
-
-        // Descobre a última rodada
         const maxRodada = campeonato.jogos.reduce((max, j) => Math.max(max, j.rodada), 0);
 
-        // Gera os novos jogos
         let novosJogos = gerarJogosProximaFaseMataMata(vencedores, campeonato.turnos, maxRodada);
-
-        // Vincula ID
         novosJogos = novosJogos.map(j => ({ ...j, campeonatoId: idCampeonato }));
 
-        // Adiciona os novos jogos ao array existente DENTRO do campeonato
         campeonato.jogos = [...campeonato.jogos, ...novosJogos];
-
-        // Salva tudo
-        await localforage.setItem(KEYS.CAMPEONATOS, listaCamps);
-
+        
+        await localforage.setItem(prefix + DATA_KEYS.CAMPEONATOS, listaCamps);
         return true;
     },
 
-    // AVANÇAR GRUPOS -> MATA-MATA
     async avancarGruposParaMataMata(idCampeonato, classificadosPorGrupo) {
         const listaCamps = await this.getCampeonatos();
         const indexCamp = listaCamps.findIndex(c => String(c.id) === String(idCampeonato));
+        const prefix = await this._getPrefix();
 
         if (indexCamp === -1) throw new Error("Campeonato não encontrado");
 
         const campeonato = listaCamps[indexCamp];
         const maxRodada = campeonato.jogos.reduce((max, j) => Math.max(max, j.rodada), 0);
 
-        // Gera o cruzamento
         let novosJogos = gerarJogosMataMataDeGrupos(classificadosPorGrupo, campeonato.turnos, maxRodada);
         novosJogos = novosJogos.map(j => ({ ...j, campeonatoId: idCampeonato }));
 
-        // Adiciona os novos jogos
         campeonato.jogos = [...campeonato.jogos, ...novosJogos];
 
-        // Salva
-        await localforage.setItem(KEYS.CAMPEONATOS, listaCamps);
-
+        await localforage.setItem(prefix + DATA_KEYS.CAMPEONATOS, listaCamps);
         return true;
     },
 
-    async resetarBanco() {
-        await localforage.clear();
+    async avancarGruposComSeeding(idCampeonato, listaFinalTimes) {
+        const campeonato = await this.getCampeonatoById(idCampeonato);
+        if (!campeonato) throw new Error("Campeonato não encontrado");
+        const maxRodada = campeonato.jogos.reduce((max, j) => Math.max(max, j.rodada), 0);
+        
+        let novosJogos = gerarJogosMataMataSeedingGeral(listaFinalTimes, campeonato.turnos, maxRodada);
+        novosJogos = novosJogos.map(j => ({ ...j, campeonatoId: idCampeonato }));
+        
+        campeonato.jogos = [...campeonato.jogos, ...novosJogos];
+        await this.atualizarCampeonato(campeonato);
+        return true;
     },
 
-    async exportarBackup() {
-        try {
-            const times = await this.getTimes();
-            const campeonatos = await this.getCampeonatos();
+    // =================================================================
+    // 3. PERSISTÊNCIA, BACKUP E UTILITÁRIOS
+    // =================================================================
 
-            const backupData = {
-                version: '1.0',
-                dataExportacao: new Date().toISOString(),
-                times: times,
-                campeonatos: campeonatos
-            };
-
-            return JSON.stringify(backupData, null, 2);
-        } catch (error) {
-            console.error("Erro ao gerar backup:", error);
-            throw new Error("Falha ao exportar dados.");
-        }
-    },
-
-    /**
-     * Importa dados.
-     * @param {string} jsonString - O conteúdo do arquivo JSON
-     * @param {string} modo - 'SUBSTITUIR' (limpa tudo antes) ou 'MESCLAR' (adiciona ao existente)
-     */
-    async importarBackup(jsonString, modo = 'SUBSTITUIR') {
-        try {
-            const dados = JSON.parse(jsonString);
-
-            if (!Array.isArray(dados.times) || !Array.isArray(dados.campeonatos)) {
-                throw new Error("Arquivo de backup inválido ou corrompido.");
-            }
-
-            let timesFinais = [];
-            let campeonatosFinais = [];
-
-            if (modo === 'MESCLAR') {
-                // 1. Recupera dados atuais do banco
-                const timesAtuais = await this.getTimes();
-                const campeonatosAtuais = await this.getCampeonatos();
-
-                // 2. Mescla Times (Usando Map para evitar duplicidade de ID)
-                // A ordem importa: primeiro os atuais, depois os novos sobrescrevem se ID for igual
-                const mapaTimes = new Map();
-                timesAtuais.forEach(t => mapaTimes.set(String(t.id), t));
-                dados.times.forEach(t => mapaTimes.set(String(t.id), t));
-
-                timesFinais = Array.from(mapaTimes.values());
-
-                // 3. Mescla Campeonatos
-                const mapaCamps = new Map();
-                campeonatosAtuais.forEach(c => mapaCamps.set(String(c.id), c));
-                dados.campeonatos.forEach(c => mapaCamps.set(String(c.id), c));
-
-                campeonatosFinais = Array.from(mapaCamps.values());
-
-            } else {
-                // Modo SUBSTITUIR: Usa apenas os dados do arquivo
-                await localforage.clear(); // Limpa tudo antes
-                timesFinais = dados.times;
-                campeonatosFinais = dados.campeonatos;
-            }
-
-            // Salva os dados finais
-            await localforage.setItem(KEYS.TIMES, timesFinais);
-            await localforage.setItem(KEYS.CAMPEONATOS, campeonatosFinais);
-
-            return true;
-        } catch (error) {
-            console.error("Erro ao importar backup:", error);
-            throw error;
-        }
-    },
-    async atualizarCampeonato(campAtualizado) {
-        const listaCamps = await this.getCampeonatos();
-        const index = listaCamps.findIndex(c => String(c.id) === String(campAtualizado.id));
-
-        if (index !== -1) {
-            listaCamps[index] = JSON.parse(JSON.stringify(campAtualizado));
-            await localforage.setItem(KEYS.CAMPEONATOS, listaCamps);
-        } else {
-            throw new Error("Campeonato não encontrado");
-        }
-    },
+    // [CORREÇÃO] Esta função foi restaurada para evitar o erro no App.vue
     async solicitarPersistencia() {
         if (navigator.storage && navigator.storage.persist) {
-            // 1. Verifica se já é persistente
             const isPersisted = await navigator.storage.persisted();
             if (isPersisted) {
                 console.log("✅ Armazenamento já é persistente.");
                 return true;
             }
 
-            // 2. Se não for, solicita a permissão
             const granted = await navigator.storage.persist();
             if (granted) {
                 console.log("✅ Permissão de persistência concedida!");
@@ -308,9 +364,7 @@ export default {
         }
     },
 
-    /**
-     * (Opcional) Verifica quanto espaço está sendo usado
-     */
+    // [CORREÇÃO] Função restaurada
     async verificarEspaco() {
         if (navigator.storage && navigator.storage.estimate) {
             const { usage, quota } = await navigator.storage.estimate();
@@ -324,15 +378,98 @@ export default {
         return null;
     },
 
-    async avancarGruposComSeeding(idCampeonato, listaFinalTimes) {
+    async resetarBanco() {
+        await localforage.clear();
+        window.location.reload();
+    },
+    
+    async exportarBackup() {
+        try {
+            const slots = await this.getSlots();
+            const activeId = await this.getActiveSlotId();
+            
+            const fullData = {
+                version: '2.0',
+                dataExportacao: new Date().toISOString(),
+                slots: slots,
+                activeSlotId: activeId,
+                data: {} 
+            };
+
+            for (const slot of slots) {
+                const prefix = `slot_${slot.id}_`;
+                fullData.data[slot.id] = {
+                    times: await localforage.getItem(prefix + DATA_KEYS.TIMES) || [],
+                    campeonatos: await localforage.getItem(prefix + DATA_KEYS.CAMPEONATOS) || []
+                };
+            }
+
+            return JSON.stringify(fullData, null, 2);
+        } catch (error) {
+            console.error("Erro ao gerar backup:", error);
+            throw new Error("Falha ao exportar dados.");
+        }
+    },
+
+    async importarBackup(jsonString, modo = 'SUBSTITUIR') {
+        try {
+            const dados = JSON.parse(jsonString);
+
+            if (modo === 'SUBSTITUIR') {
+                await localforage.clear();
+            }
+
+            // Compatibilidade com Backup V1 (sem slots)
+            if (!dados.version || dados.version === '1.0') {
+                const slotId = 0;
+                let slots = await this.getSlots();
+                if (!slots.find(s => s.id === slotId)) {
+                    slots.push({ id: slotId, alias: 'Importado V1', criadoEm: new Date().toISOString() });
+                    await localforage.setItem(SYSTEM_KEYS.SLOTS, slots);
+                }
+                
+                const prefix = `slot_${slotId}_`;
+                await localforage.setItem(prefix + DATA_KEYS.TIMES, dados.times || []);
+                await localforage.setItem(prefix + DATA_KEYS.CAMPEONATOS, dados.campeonatos || []);
+                await localforage.setItem(SYSTEM_KEYS.ACTIVE_SLOT, slotId);
+            } 
+            // Backup V2 (Multi-Slots)
+            else {
+                await localforage.setItem(SYSTEM_KEYS.SLOTS, dados.slots);
+                await localforage.setItem(SYSTEM_KEYS.ACTIVE_SLOT, dados.activeSlotId);
+                
+                for (const slotId in dados.data) {
+                    const content = dados.data[slotId];
+                    const prefix = `slot_${slotId}_`;
+                    await localforage.setItem(prefix + DATA_KEYS.TIMES, content.times);
+                    await localforage.setItem(prefix + DATA_KEYS.CAMPEONATOS, content.campeonatos);
+                }
+            }
+            
+            return true;
+        } catch (error) {
+            console.error("Erro ao importar backup:", error);
+            throw error;
+        }
+    },
+
+    async avancarLigaParaFaseFinal(idCampeonato, timesClassificados) {
         const campeonato = await this.getCampeonatoById(idCampeonato);
         if (!campeonato) throw new Error("Campeonato não encontrado");
+
         const maxRodada = campeonato.jogos.reduce((max, j) => Math.max(max, j.rodada), 0);
+        const turnosFinal = parseInt(campeonato.turnosFaseFinal) || 1;
+
+        let novosJogos = gerarJogosFaseFinalPontosCorridos(timesClassificados, turnosFinal, maxRodada);
         
-        let novosJogos = gerarJogosMataMataSeedingGeral(listaFinalTimes, campeonato.turnos, maxRodada);
+        // Vincula ID
         novosJogos = novosJogos.map(j => ({ ...j, campeonatoId: idCampeonato }));
         
         campeonato.jogos = [...campeonato.jogos, ...novosJogos];
+        
+        // Atualiza status se necessário ou marca flag interna
+        // campeonato.faseAtual = 'Fase Final'; 
+
         await this.atualizarCampeonato(campeonato);
         return true;
     }

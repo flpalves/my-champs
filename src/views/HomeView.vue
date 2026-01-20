@@ -1,12 +1,20 @@
 <template>
   <div class="container mt-4 mb-5">
-    
-    <div class="d-flex justify-content-between align-items-center mb-4 fade-in">
+
+    <div
+      class="d-flex justify-content-between align-items-center mb-4 fade-in bg-dark p-3 rounded border border-secondary">
       <div>
-        <h1 class="text-primary fw-bold mb-0">
-          <span class="text-white">MY</span> Champs
+        <h1 class="text-primary fw-bold mb-0" style="font-size: 1.5rem;">
+          <span class="text-white">MY</span> Champs <span class="text-muted fs-6"></span>
         </h1>
-        <p class="text-muted small mb-0">Painel de Controle de jogos de Futebol,<br> ou qualquer coisa parecida xD</p>
+        <div class="d-flex align-items-center gap-2 mt-1">
+          <span class="text-muted small">Mundo Atual:</span>
+          <BBadge variant="primary" class="fs-6">{{ nomeSlotAtual }}</BBadge>
+          <BButton size="sm" variant="outline-light" class="py-0 px-2" style="font-size: 0.7rem;"
+            @click="abrirModalSlots">
+            Trocar / Gerenciar 🌍
+          </BButton>
+        </div>
       </div>
       <div class="text-end d-none d-md-block">
         <span class="d-block text-white fw-bold">{{ saudacao }}, Treinador.</span>
@@ -44,14 +52,14 @@
     <BRow>
       <BCol lg="8" class="mb-4 fade-in-up" style="animation-delay: 0.1s">
         <BCard title="🏆 Torneios Ativos" class="h-100 border-0 shadow-sm" style="min-height: 300px;">
-          
+
           <div v-if="carregando" class="text-center py-5">
             <BSpinner variant="primary" small />
           </div>
 
           <div v-else-if="campeonatosAtivos.length === 0" class="text-center py-5 text-muted">
             <div class="mb-3" style="font-size: 3rem;">⚽</div>
-            <h5>Nenhum campeonato em andamento.</h5>
+            <h5>Nenhum campeonato neste mundo.</h5>
             <p class="small">Comece uma nova temporada agora mesmo!</p>
             <BButton variant="primary" class="mt-2" @click="$router.push('/novo-campeonato')">
               Criar Campeonato
@@ -59,13 +67,9 @@
           </div>
 
           <div v-else class="list-group list-group-flush">
-            <div 
-              v-for="camp in campeonatosAtivos" 
-              :key="camp.id" 
+            <div v-for="camp in campeonatosAtivos" :key="camp.id"
               class="list-group-item bg-transparent text-white border-secondary action-row d-flex justify-content-between align-items-center p-3"
-              @click="$router.push(`/campeonato/${camp.id}`)"
-              style="cursor: pointer"
-            >
+              @click="$router.push(`/campeonato/${camp.id}`)" style="cursor: pointer">
               <div class="d-flex align-items-center">
                 <div class="me-3 text-center" style="width: 40px;">
                   <span v-if="camp.tipo === 'MATA_MATA'" style="font-size: 1.5rem;">⚔️</span>
@@ -91,77 +95,156 @@
       <BCol lg="4" class="mb-4 fade-in-up" style="animation-delay: 0.2s">
         <BCard title="⚡ Acesso Rápido" class="h-100 border-0 shadow-sm">
           <div class="d-grid gap-3">
-            
-            <BButton variant="outline-primary" class="text-start p-3 d-flex align-items-center quick-btn" @click="$router.push('/novo-campeonato')">
+            <BButton variant="outline-primary" class="text-start p-3 d-flex align-items-center quick-btn"
+              @click="$router.push('/novo-campeonato')">
               <span class="fs-4 me-3">➕</span>
               <div>
                 <div class="fw-bold">Novo Campeonato</div>
                 <div class="small text-muted">Inicie uma nova copa ou liga</div>
               </div>
             </BButton>
-
-            <BButton variant="outline-secondary" class="text-start p-3 d-flex align-items-center quick-btn" @click="$router.push('/novo-time')">
+            <BButton variant="outline-secondary" class="text-start p-3 d-flex align-items-center quick-btn"
+              @click="$router.push('/novo-time')">
               <span class="fs-4 me-3">🛡️</span>
               <div>
                 <div class="fw-bold text-white">Cadastrar Clube</div>
                 <div class="small text-muted">Adicione novos times ao banco</div>
               </div>
             </BButton>
-
-            <BButton variant="outline-secondary" class="text-start p-3 d-flex align-items-center quick-btn" @click="$router.push('/lista-clubes')">
+            <BButton variant="outline-secondary" class="text-start p-3 d-flex align-items-center quick-btn"
+              @click="$router.push('/lista-clubes')">
               <span class="fs-4 me-3">📋</span>
               <div>
                 <div class="fw-bold text-white">Gerenciar Clubes</div>
                 <div class="small text-muted">Edite elencos e estádios</div>
               </div>
             </BButton>
-
-            <BButton variant="outline-secondary" class="text-start p-3 d-flex align-items-center quick-btn" @click="$router.push('/lista-campeonatos')">
+            <BButton variant="outline-secondary" class="text-start p-3 d-flex align-items-center quick-btn"
+              @click="$router.push('/lista-campeonatos')">
               <span class="fs-4 me-3">📂</span>
               <div>
                 <div class="fw-bold text-white">Histórico</div>
                 <div class="small text-muted">Ver todos os campeonatos</div>
               </div>
             </BButton>
-
           </div>
         </BCard>
       </BCol>
     </BRow>
+
+    <BModal v-model="modalSlotsAberto" title="Gerenciar Mundos (Slots)" hide-footer size="lg">
+      <div class="p-2">
+        <p class="text-muted small">Crie instâncias separadas para diferentes contextos (ex: FIFA, Botão, Kart).</p>
+
+        <div class="d-flex gap-2 mb-4">
+          <BFormInput v-model="novoSlotNome" placeholder="Nome do novo mundo (ex: FIFA 25)" @keyup.enter="criarSlot" />
+          <BButton variant="success" @click="criarSlot" :disabled="!novoSlotNome">Criar</BButton>
+        </div>
+
+        <div class="list-group">
+          <div v-for="slot in slotsDisponiveis" :key="slot.id"
+            class="list-group-item d-flex justify-content-between align-items-center bg-dark text-white border-secondary mb-1 rounded"
+            :class="{ 'border-primary border-2': slot.id === slotAtivoId }">
+
+            <div class="d-flex align-items-center gap-3">
+              <div style="width: 30px; text-align: center;">
+                <span v-if="slot.id === slotAtivoId">🟢</span>
+                <span v-else>🌍</span>
+              </div>
+              <div>
+                <h6 class="mb-0 fw-bold">{{ slot.alias }}</h6>
+                <small class="text-muted">ID: {{ slot.id }}</small>
+              </div>
+            </div>
+
+            <div class="d-flex gap-2">
+              <BButton v-if="slot.id !== slotAtivoId" size="sm" variant="outline-primary" @click="trocarSlot(slot.id)">
+                Carregar
+              </BButton>
+              <BButton v-else size="sm" variant="primary" disabled>
+                Ativo
+              </BButton>
+
+              <BButton v-if="slot.id !== slotAtivoId" size="sm" variant="outline-danger" @click="excluirSlot(slot.id)">
+                🗑️
+              </BButton>
+            </div>
+          </div>
+        </div>
+      </div>
+    </BModal>
 
   </div>
 </template>
 
 <script>
 import DbService from '../services/DbService.js';
-import { 
-  BRow, BCol, BCard, BButton, BBadge, BSpinner 
+import {
+  BRow, BCol, BCard, BButton, BBadge, BSpinner, BModal, BFormInput
 } from 'bootstrap-vue-next';
 
 export default {
   name: 'Home',
   components: {
-    BRow, BCol, BCard, BButton, BBadge, BSpinner
+    BRow, BCol, BCard, BButton, BBadge, BSpinner, BModal, BFormInput
   },
   data() {
     return {
       carregando: true,
-      stats: {
-        totalTimes: 0,
-        totalCampeonatos: 0,
-        totalJogos: 0,
-        totalGols: 0
-      },
+      stats: { totalTimes: 0, totalCampeonatos: 0, totalJogos: 0, totalGols: 0 },
       campeonatosAtivos: [],
       saudacao: 'Bem-vindo',
-      hoje: new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+      hoje: new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }),
+
+      // Slots Data
+      modalSlotsAberto: false,
+      slotsDisponiveis: [],
+      slotAtivoId: 0,
+      novoSlotNome: ''
+    }
+  },
+  computed: {
+    nomeSlotAtual() {
+      const slot = this.slotsDisponiveis.find(s => s.id === this.slotAtivoId);
+      return slot ? slot.alias : 'Carregando...';
     }
   },
   async mounted() {
     this.definirSaudacao();
-    await this.carregarDashboard();
+    await this.carregarSlots(); // Primeiro carrega sistema de slots
+    await this.carregarDashboard(); // Depois dados do slot
   },
   methods: {
+    async carregarSlots() {
+      this.slotAtivoId = await DbService.getActiveSlotId();
+      this.slotsDisponiveis = await DbService.getSlots();
+    },
+
+    async criarSlot() {
+      if (!this.novoSlotNome) return;
+      await DbService.criarSlot(this.novoSlotNome);
+      this.novoSlotNome = '';
+      await this.carregarSlots();
+    },
+
+    async trocarSlot(id) {
+      if (confirm("Trocar de mundo irá recarregar a página. Confirmar?")) {
+        await DbService.trocarSlot(id);
+      }
+    },
+
+    async excluirSlot(id) {
+      if (confirm("Tem certeza? Todos os times e campeonatos deste mundo serão apagados permanentemente.")) {
+        await DbService.excluirSlot(id);
+        await this.carregarSlots();
+      }
+    },
+
+    abrirModalSlots() {
+      this.modalSlotsAberto = true;
+    },
+
+    // --- Métodos Originais ---
     definirSaudacao() {
       const hora = new Date().getHours();
       if (hora < 12) this.saudacao = 'Bom dia';
@@ -171,38 +254,30 @@ export default {
 
     async carregarDashboard() {
       try {
-        // Carrega Times e Campeonatos
         const [times, campeonatos] = await Promise.all([
           DbService.getTimes(),
           DbService.getCampeonatos()
         ]);
 
-        // 1. Estatísticas Gerais
         this.stats.totalTimes = times.length;
         this.stats.totalCampeonatos = campeonatos.length;
-        
+
         let totalJogosRealizados = 0;
         let totalGolsMarcados = 0;
 
-        // Itera sobre cada campeonato para somar jogos e gols reais
         campeonatos.forEach(c => {
-            if(c.jogos && Array.isArray(c.jogos)) {
-                // Conta apenas jogos finalizados
-                const realizados = c.jogos.filter(j => j.finalizado);
-                totalJogosRealizados += realizados.length;
-                
-                realizados.forEach(j => {
-                    const golsA = parseInt(j.golsA) || 0;
-                    const golsB = parseInt(j.golsB) || 0;
-                    totalGolsMarcados += (golsA + golsB);
-                });
-            }
+          if (c.jogos && Array.isArray(c.jogos)) {
+            const realizados = c.jogos.filter(j => j.finalizado);
+            totalJogosRealizados += realizados.length;
+            realizados.forEach(j => {
+              totalGolsMarcados += (parseInt(j.golsA) || 0) + (parseInt(j.golsB) || 0);
+            });
+          }
         });
 
         this.stats.totalJogos = totalJogosRealizados;
         this.stats.totalGols = totalGolsMarcados;
 
-        // 2. Campeonatos Ativos (Top 5 mais recentes que estão EM_ANDAMENTO)
         this.campeonatosAtivos = campeonatos
           .filter(c => c.status === 'EM_ANDAMENTO')
           .sort((a, b) => new Date(b.dataCriacao) - new Date(a.dataCriacao))
@@ -237,49 +312,62 @@ export default {
 </script>
 
 <style scoped>
-/* Pequenas animações de entrada */
+/* Pequenas animações */
 .fade-in {
   animation: fadeIn 0.8s ease-out;
 }
+
 .fade-in-up {
   animation: fadeInUp 0.8s ease-out backwards;
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-/* Efeitos nos Cards de Estatística */
 .stat-card {
   transition: transform 0.2s;
-  background-color: #212529; /* Fallback caso não use o theme manager */
+  background-color: #212529;
 }
+
 .stat-card:hover {
   transform: translateY(-5px);
 }
 
-/* Efeitos nos Itens de Lista */
 .action-row {
   transition: background-color 0.2s, transform 0.1s;
   border-left: 3px solid transparent;
 }
+
 .action-row:hover {
   background-color: rgba(255, 255, 255, 0.05) !important;
   border-left: 3px solid var(--bs-primary);
 }
 
-/* Efeitos nos Botões Rápidos */
 .quick-btn {
   border: 1px solid rgba(255, 255, 255, 0.1);
   background-color: rgba(255, 255, 255, 0.02);
   transition: all 0.2s;
 }
+
 .quick-btn:hover {
   background-color: rgba(255, 255, 255, 0.1);
   transform: translateX(5px);
