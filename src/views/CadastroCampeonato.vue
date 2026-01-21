@@ -365,7 +365,7 @@
               <div class="text-muted small" v-if="!regrasHallDefinidas">Configuração padrão será usada.</div>
               <div class="text-success small fw-bold" v-else>Pontuação personalizada definida!</div>
             </div>
-            <BButton variant="outline-warning" size="sm" @click="this.fuder">
+            <BButton variant="outline-warning" size="sm" @click="this.modalPont">
               Configurar Pontuação
             </BButton>
             <ConfiguracaoPontuacaoModal v-model="modalPontuacaoAberto" :tipo="campeonato.tipo" :qtd-times="idsSelecionados.length"
@@ -546,8 +546,7 @@ export default {
         this.auxiliares.timeSelecionadoParaGrupo[index] = null;
       }
     },
-    fuder() {
-      alert('fuder');
+    modalPont() {
       this.modalPontuacaoAberto = true;
     },
     removerDoGrupoManual(index, timeId) {
