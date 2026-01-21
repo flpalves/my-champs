@@ -233,11 +233,10 @@ export default {
             usarRepescagem: dadosBasicos.usarRepescagem || false,
             modoKnockout: dadosBasicos.modoKnockout || 'PADRAO',
 
-            // === CORREÇÃO: ADICIONANDO OS CAMPOS QUE FALTAVAM ===
+            // Ligas e Hall
             turnosFaseFinal: dadosBasicos.turnosFaseFinal ? parseInt(dadosBasicos.turnosFaseFinal) : null,
             qtdClassificados: dadosBasicos.qtdClassificados ? parseInt(dadosBasicos.qtdClassificados) : null,
             zerarPontos: dadosBasicos.zerarPontos !== undefined ? Boolean(dadosBasicos.zerarPontos) : false,
-            // ====================================================
             
             // Dados Hall da Fama
             regrasHall: dadosBasicos.regrasHall || {},
@@ -353,18 +352,14 @@ export default {
         
         campeonato.jogos = [...campeonato.jogos, ...novosJogos];
         
-        // Atualiza status se necessário ou marca flag interna
-        // campeonato.faseAtual = 'Fase Final'; 
-
         await this.atualizarCampeonato(campeonato);
         return true;
     },
 
     // =================================================================
-    // 5. PERSISTÊNCIA E BACKUP
+    // 5. PERSISTÊNCIA, BACKUP E IMPORTAÇÃO DE MUNDOS
     // =================================================================
 
-    // 1. Verificação passiva (não mostra prompt, seguro para mounted)
     async verificarStatusPersistencia() {
         if (navigator.storage && navigator.storage.persisted) {
             return await navigator.storage.persisted();
@@ -372,7 +367,6 @@ export default {
         return false;
     },
 
-    // 2. Solicitação ativa (precisa ser disparada por clique do usuário)
     async solicitarPersistencia() {
         if (navigator.storage && navigator.storage.persist) {
             const isPersisted = await navigator.storage.persisted();
@@ -380,18 +374,12 @@ export default {
                 console.log("✅ Armazenamento já é persistente.");
                 return true;
             }
-
             const granted = await navigator.storage.persist();
-            if (granted) {
-                console.log("✅ Permissão de persistência concedida!");
-            } else {
-                console.warn("⚠️ Permissão de persistência negada.");
-            }
+            if (granted) console.log("✅ Permissão concedida!");
+            else console.warn("⚠️ Permissão negada.");
             return granted;
-        } else {
-            console.log("ℹ️ API de persistência não suportada.");
-            return false;
         }
+        return false;
     },
 
     async verificarEspaco() {
@@ -400,8 +388,6 @@ export default {
             const usoMB = (usage / 1024 / 1024).toFixed(2);
             const totalMB = (quota / 1024 / 1024).toFixed(2);
             const porcentagem = ((usage / quota) * 100).toFixed(2);
-
-            console.log(`📊 Uso de Disco: ${usoMB}MB de ${totalMB}MB (${porcentagem}%)`);
             return { usoMB, totalMB, porcentagem };
         }
         return null;
@@ -412,6 +398,7 @@ export default {
         window.location.reload();
     },
     
+    // --- EXPORTAR BACKUP COMPLETO (SISTEMA TODO) ---
     async exportarBackup() {
         try {
             const slots = await this.getSlots();
@@ -440,6 +427,74 @@ export default {
         }
     },
 
+    // --- NOVO: EXPORTAR APENAS UM MUNDO ESPECÍFICO ---
+    async exportarMundo(idSlot) {
+        try {
+            const slots = await this.getSlots();
+            const slot = slots.find(s => s.id === idSlot);
+            if (!slot) throw new Error("Mundo não encontrado.");
+
+            const prefix = `slot_${idSlot}_`;
+            const times = await localforage.getItem(prefix + DATA_KEYS.TIMES) || [];
+            const campeonatos = await localforage.getItem(prefix + DATA_KEYS.CAMPEONATOS) || [];
+
+            // Estrutura simplificada "Single World"
+            const dadosMundo = {
+                version: '2.0-single',
+                alias: slot.alias,
+                dataExportacao: new Date().toISOString(),
+                times: times,
+                campeonatos: campeonatos
+            };
+
+            return JSON.stringify(dadosMundo, null, 2);
+        } catch (error) {
+            console.error("Erro ao exportar mundo:", error);
+            throw error;
+        }
+    },
+
+    // --- NOVO: IMPORTAR COMO NOVO MUNDO ---
+    // Aceita tanto backup '2.0-single' quanto legado '1.0'
+    async importarMundo(jsonString, nomeNovo = null) {
+        try {
+            const dados = JSON.parse(jsonString);
+            
+            let times = [];
+            let campeonatos = [];
+            let nomeOriginal = 'Mundo Importado';
+
+            // Detecta formato
+            if (dados.version === '2.0-single') {
+                times = dados.times || [];
+                campeonatos = dados.campeonatos || [];
+                nomeOriginal = dados.alias;
+            } else if (!dados.version || dados.version === '1.0') {
+                // Legado V1
+                times = dados.times || [];
+                campeonatos = dados.campeonatos || [];
+                nomeOriginal = "Importado V1";
+            } else {
+                throw new Error("Este arquivo parece ser um Backup Completo do Sistema. Use a função 'Restaurar Backup Completo' ou exporte apenas um mundo individualmente.");
+            }
+
+            // Cria novo slot
+            const nomeFinal = nomeNovo || nomeOriginal || `Importado (${new Date().toLocaleDateString()})`;
+            const newId = await this.criarSlot(nomeFinal);
+
+            // Salva dados no novo slot
+            const prefix = `slot_${newId}_`;
+            await localforage.setItem(prefix + DATA_KEYS.TIMES, times);
+            await localforage.setItem(prefix + DATA_KEYS.CAMPEONATOS, campeonatos);
+
+            return newId; // Retorna ID do novo mundo
+        } catch (error) {
+            console.error("Erro ao importar mundo:", error);
+            throw error;
+        }
+    },
+
+    // --- IMPORTAR BACKUP COMPLETO (RESTORE GERAL) ---
     async importarBackup(jsonString, modo = 'SUBSTITUIR') {
         try {
             const dados = JSON.parse(jsonString);
@@ -450,20 +505,13 @@ export default {
 
             // Compatibilidade com Backup V1 (sem slots)
             if (!dados.version || dados.version === '1.0') {
-                const slotId = 0;
-                let slots = await this.getSlots();
-                if (!slots.find(s => s.id === slotId)) {
-                    slots.push({ id: slotId, alias: 'Importado V1', criadoEm: new Date().toISOString() });
-                    await localforage.setItem(SYSTEM_KEYS.SLOTS, slots);
-                }
-                
-                const prefix = `slot_${slotId}_`;
+                await this.inicializarSistemaSlots();
+                const prefix = 'slot_0_';
                 await localforage.setItem(prefix + DATA_KEYS.TIMES, dados.times || []);
                 await localforage.setItem(prefix + DATA_KEYS.CAMPEONATOS, dados.campeonatos || []);
-                await localforage.setItem(SYSTEM_KEYS.ACTIVE_SLOT, slotId);
             } 
             // Backup V2 (Multi-Slots)
-            else {
+            else if (dados.version === '2.0') {
                 await localforage.setItem(SYSTEM_KEYS.SLOTS, dados.slots);
                 await localforage.setItem(SYSTEM_KEYS.ACTIVE_SLOT, dados.activeSlotId);
                 
@@ -473,6 +521,8 @@ export default {
                     await localforage.setItem(prefix + DATA_KEYS.TIMES, content.times);
                     await localforage.setItem(prefix + DATA_KEYS.CAMPEONATOS, content.campeonatos);
                 }
+            } else {
+                throw new Error("Formato de backup desconhecido.");
             }
             
             return true;
