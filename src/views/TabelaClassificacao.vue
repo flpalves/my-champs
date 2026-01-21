@@ -76,9 +76,98 @@
         </div>
       </div>
 
+      <div v-else-if="campeonato.tipo === 'LIGA_COM_FINAL'">
+        
+        <div v-if="classificacaoFaseFinal.length > 0" class="mb-5">
+            <h4 class="text-warning fw-bold border-start border-4 border-warning ps-2 mb-3">
+                🏆 Fase Final
+                <span class="badge bg-dark fs-6 ms-2 text-white fw-normal" v-if="campeonato.zerarPontos">Pontos Zerados</span>
+                <span class="badge bg-dark fs-6 ms-2 text-white fw-normal" v-else>Pontos Acumulados</span>
+            </h4>
+            
+            <BCard class="shadow-sm p-0 overflow-hidden border-warning">
+                <BTableSimple hover responsive striped class="mb-0 align-middle">
+                    <BThead class="bg-warning text-dark">
+                    <BTr>
+                        <BTh>#</BTh>
+                        <BTh>Time</BTh>
+                        <BTh v-for="col in colunas" :key="col.chave" class="text-center">{{ col.sigla }}</BTh>
+                    </BTr>
+                    </BThead>
+                    <BTbody>
+                    <BTr v-for="(time, index) in classificacaoFaseFinal" :key="time.id">
+                        <BTd class="text-center fw-bold" style="width: 50px;">{{ index + 1 }}º</BTd>
+                        <BTd style="min-width: 200px;">
+                        <div class="d-flex align-items-center">
+                            <img :src="time.escudo" class="me-2" style="width: 30px; height: 30px; object-fit: contain;" onerror="this.style.display='none'" />
+                            <span class="fw-bold">{{ time.nome }}</span>
+                            <!-- <span v-if="index === 0 && time.jogos > 0" class="ms-2 badge bg-warning text-dark">Líder</span> -->
+                        </div>
+                        </BTd>
+                        <BTd class="text-center fw-bold">{{ time.pontos }}</BTd>
+                        <BTd class="text-center">{{ time.jogos }}</BTd>
+                        <BTd class="text-center">{{ time.vitorias }}</BTd>
+                        <BTd class="text-center">{{ time.empates }}</BTd>
+                        <BTd class="text-center">{{ time.derrotas }}</BTd>
+                        <BTd class="text-center small">{{ time.aproveitamento }}%</BTd>
+                        <BTd class="text-center">{{ time.saldoGols }}</BTd>
+                        <BTd class="text-center text-muted small">{{ time.golsPro }}</BTd>
+                        <BTd class="text-center text-muted small">{{ time.golsContra }}</BTd>
+                    </BTr>
+                    </BTbody>
+                </BTableSimple>
+            </BCard>
+        </div>
+
+        <h4 class="text-primary fw-bold border-start border-4 border-primary ps-2 mb-3">
+            1ª Fase (Classificação Geral)
+        </h4>
+        <BCard class="shadow-sm p-0 overflow-hidden">
+          <BTableSimple hover responsive striped class="mb-0 align-middle">
+            <BThead variant="dark">
+              <BTr>
+                <BTh>#</BTh>
+                <BTh>Time</BTh>
+                <BTh v-for="col in colunas" :key="col.chave" class="text-center cursor-pointer user-select-none"
+                  @click="alterarOrdenacao(col.chave)" :title="col.titulo"
+                  :class="{ 'bg-secondary': ordenacao.coluna === col.chave }">
+                  {{ col.sigla }}
+                  <span v-if="ordenacao.coluna === col.chave" class="small">
+                    {{ ordenacao.direcao === 'desc' ? '▼' : '▲' }}
+                  </span>
+                </BTh>
+              </BTr>
+            </BThead>
+            <BTbody>
+              <BTr v-for="(time, index) in timesClassificados" :key="time.id" 
+                   :class="{'qualy-success': index < (campeonato.qtdClassificados || 4)}">
+                <BTd class="text-center text-muted small" style="width: 50px;">{{ index + 1 }}º</BTd>
+                <BTd style="min-width: 200px;">
+                  <div class="d-flex align-items-center">
+                    <img :src="time.escudo" class="me-2" style="width: 30px; height: 30px; object-fit: contain;"
+                      onerror="this.style.display='none'" />
+                    <span class="fw-bold">{{ time.nome }}</span>
+                    <!-- <span v-if="index < (campeonato.qtdClassificados || 4)" class="badge bg-success ms-2 small">Classifica</span> -->
+                  </div>
+                </BTd>
+                <BTd class="text-center fw-bold text-primary">{{ time.pontos }}</BTd>
+                <BTd class="text-center">{{ time.jogos }}</BTd>
+                <BTd class="text-center">{{ time.vitorias }}</BTd>
+                <BTd class="text-center">{{ time.empates }}</BTd>
+                <BTd class="text-center">{{ time.derrotas }}</BTd>
+                <BTd class="text-center small">{{ time.aproveitamento }}%</BTd>
+                <BTd class="text-center">{{ time.saldoGols }}</BTd>
+                <BTd class="text-center text-muted small">{{ time.golsPro }}</BTd>
+                <BTd class="text-center text-muted small">{{ time.golsContra }}</BTd>
+              </BTr>
+            </BTbody>
+          </BTableSimple>
+        </BCard>
+      </div>
+
       <div v-else-if="campeonato.tipo === 'GRUPOS'">
         <div v-for="(grupoTimes, nomeGrupo) in classificacaoPorGrupo" :key="nomeGrupo" class="mb-4">
-          <h5 class="fw-bold   border-start border-4 border-primary ps-2 mb-2   py-2">
+          <h5 class="fw-bold border-start border-4 border-primary ps-2 mb-2 py-2">
             {{ nomeGrupo }}
           </h5>
           <BCard class="shadow-sm p-0 overflow-hidden">
@@ -107,7 +196,7 @@
                       <span class="fw-bold">{{ time.nome }}</span>
                     </div>
                   </BTd>
-                  <BTd class="text-center fw-bold   text-primary">{{ time.pontos }}</BTd>
+                  <BTd class="text-center fw-bold text-primary">{{ time.pontos }}</BTd>
                   <BTd class="text-center">{{ time.jogos }}</BTd>
                   <BTd class="text-center">{{ time.vitorias }}</BTd>
                   <BTd class="text-center">{{ time.empates }}</BTd>
@@ -122,34 +211,19 @@
           </BCard>
         </div>
 
-        <div class="mt-2 text-muted small">
-          <span class="me-3"><strong>P:</strong> Pontos</span>
-          <span class="me-3"><strong>J:</strong> Jogos</span>
-          <span class="me-3"><strong>V:</strong> Vitórias</span>
-          <span class="me-3"><strong>E:</strong> Empates</span>
-          <span class="me-3"><strong>D:</strong> Derrotas</span>
-          <span class="me-3"><strong>%:</strong> Aproveitamento</span>
-          <span class="me-3"><strong>SG:</strong> Saldo de Gols</span>
-          <span class="me-3"><strong>GP:</strong> Gols Pró</span>
-          <span><strong>GC:</strong> Gols Contra</span>
-        </div>
-
         <div v-if="temMataMata" class="mt-5 pt-4 border-top">
           <h4 class="text-primary fw-bold mb-4">Fase Final</h4>
-
           <div class="d-flex flex-nowrap overflow-auto pb-4 gap-4" style="min-height: 400px;">
             <div v-for="(fase, nomeFase) in dadosMataMata" :key="nomeFase" class="fase-coluna"
               style="min-width: 320px;">
               <h5 class="text-center bg-dark text-white py-2 rounded-top mb-0">{{ nomeFase }}</h5>
-              <div class="  p-3 h-100 border-start border-end border-bottom">
-
+              <div class="p-3 h-100 border-start border-end border-bottom">
                 <div v-for="confronto in fase" :key="confronto.id" class="card mb-3 shadow-sm border-0 confronto-card">
                   <div class="card-body p-2">
                     <div class="d-flex justify-content-between text-muted small mb-1">
                       <span>Confronto #{{ confronto.id }}</span>
                       <span v-if="confronto.finalizado" class="text-success fw-bold">Finalizado</span>
                     </div>
-
                     <div class="d-flex justify-content-between align-items-center p-2 rounded mb-1"
                       :class="{ 'bg-success-subtle fw-bold': confronto.vencedor === confronto.timeA.id, ' ': confronto.vencedor !== confronto.timeA.id }">
                       <div class="d-flex align-items-center">
@@ -162,7 +236,6 @@
                         <span class="fw-bold ms-1">{{ confronto.totalA }}</span>
                       </div>
                     </div>
-
                     <div class="d-flex justify-content-between align-items-center p-2 rounded"
                       :class="{ 'bg-success-subtle fw-bold': confronto.vencedor === confronto.timeB.id, ' ': confronto.vencedor !== confronto.timeB.id }">
                       <div class="d-flex align-items-center">
@@ -177,7 +250,6 @@
                     </div>
                   </div>
                 </div>
-
               </div>
             </div>
           </div>
@@ -186,18 +258,15 @@
 
       <div v-else-if="campeonato.tipo === 'MATA_MATA'">
         <div class="d-flex flex-nowrap overflow-auto pb-4 gap-4" style="min-height: 400px;">
-
           <div v-for="(fase, nomeFase) in dadosMataMata" :key="nomeFase" class="fase-coluna" style="min-width: 320px;">
             <h5 class="text-center bg-dark text-white py-2 rounded-top mb-0">{{ nomeFase }}</h5>
-            <div class="  p-3 h-100 border-start border-end border-bottom">
-
+            <div class="p-3 h-100 border-start border-end border-bottom">
               <div v-for="confronto in fase" :key="confronto.id" class="card mb-3 shadow-sm border-0 confronto-card">
                 <div class="card-body p-2">
                   <div class="d-flex justify-content-between text-muted small mb-1">
                     <span>Confronto #{{ confronto.id }}</span>
                     <span v-if="confronto.finalizado" class="text-success fw-bold">Finalizado</span>
                   </div>
-
                   <div class="d-flex justify-content-between align-items-center p-2 rounded mb-1"
                     :class="{ 'bg-success-subtle fw-bold': confronto.vencedor === confronto.timeA.id, ' ': confronto.vencedor !== confronto.timeA.id }">
                     <div class="d-flex align-items-center">
@@ -210,7 +279,6 @@
                       <span class="fw-bold ms-1">{{ confronto.totalA }}</span>
                     </div>
                   </div>
-
                   <div class="d-flex justify-content-between align-items-center p-2 rounded"
                     :class="{ 'bg-success-subtle fw-bold': confronto.vencedor === confronto.timeB.id, ' ': confronto.vencedor !== confronto.timeB.id }">
                     <div class="d-flex align-items-center">
@@ -223,17 +291,13 @@
                       <span class="fw-bold ms-1">{{ confronto.totalB }}</span>
                     </div>
                   </div>
-
                 </div>
               </div>
-
             </div>
           </div>
-
           <div v-if="Object.keys(dadosMataMata).length === 0" class="text-center w-100 py-5 text-muted">
             Nenhum confronto definido ainda.
           </div>
-
         </div>
       </div>
 
@@ -259,7 +323,7 @@ export default {
     return {
       carregando: true,
       campeonato: null,
-      tabelaBase: [], // Todos os times com stats calculados
+      tabelaBase: [], // Todos os times com stats calculados da 1ª FASE (ou geral)
 
       ordenacao: { coluna: 'pontos', direcao: 'desc' },
 
@@ -279,8 +343,91 @@ export default {
   computed: {
     // --- Lógica para Pontos Corridos e Base para Grupos ---
     timesClassificados() {
-      // Ordena a tabelaBase inteira
+      // Ordena a tabelaBase inteira (Classificação Geral / 1ª Fase)
       return this.ordenarTimes([...this.tabelaBase]);
+    },
+
+    // --- NOVA LÓGICA CORRIGIDA: FASE FINAL DA LIGA ---
+    classificacaoFaseFinal() {
+        if (!this.campeonato || this.campeonato.tipo !== 'LIGA_COM_FINAL') return [];
+        
+        // Verifica se existem jogos na fase final
+        const jogosFinal = this.campeonato.jogos.filter(j => j.fase === 'Fase Final');
+        if (jogosFinal.length === 0) return []; // Fase ainda não começou
+
+        // Identifica os times que estão na fase final
+        const idsFinalistas = new Set();
+        jogosFinal.forEach(j => { idsFinalistas.add(j.timeA.id); idsFinalistas.add(j.timeB.id); });
+
+        // Calcula stats
+        const statsFinal = {};
+        idsFinalistas.forEach(id => {
+            const infoTime = this.campeonato.timesParticipantes.find(t => t.id === id);
+            statsFinal[id] = {
+                id: id,
+                nome: infoTime ? infoTime.nome : 'Time',
+                escudo: infoTime ? infoTime.escudo : null,
+                pontos: 0, jogos: 0, vitorias: 0, empates: 0, derrotas: 0,
+                golsPro: 0, golsContra: 0, saldoGols: 0, aproveitamento: '0.0', aproveitamentoNum: 0
+            };
+        });
+
+        // Decide quais jogos contar:
+        const zerar = this.campeonato.zerarPontos;
+        
+        const jogosParaCalcular = this.campeonato.jogos.filter(j => {
+            if (!j.finalizado) return false;
+            // Se deve zerar, ignora jogos que NÃO são da fase final
+            if (zerar && j.fase !== 'Fase Final') return false;
+            // Se não for jogo de fase final e nem da fase inicial (ex: undefined), ignora
+            if (j.fase && j.fase !== 'Fase Final') return false; 
+            return true;
+        });
+
+        jogosParaCalcular.forEach(jogo => {
+            const tA = statsFinal[jogo.timeA.id];
+            const tB = statsFinal[jogo.timeB.id];
+            
+            // CORREÇÃO AQUI: Verificamos individualmente se cada time é finalista.
+            // Se "Acumular Pontos", o finalista soma pontos mesmo se jogou contra um eliminado na 1ª fase.
+            
+            // Time A é finalista?
+            if (tA) {
+                tA.jogos++; 
+                tA.golsPro += (jogo.golsA || 0); 
+                tA.golsContra += (jogo.golsB || 0);
+
+                if (jogo.golsA > jogo.golsB) { tA.vitorias++; tA.pontos += 3; }
+                else if (jogo.golsB > jogo.golsA) { tA.derrotas++; }
+                else { tA.empates++; tA.pontos += 1; }
+            }
+
+            // Time B é finalista?
+            if (tB) {
+                tB.jogos++;
+                tB.golsPro += (jogo.golsB || 0); 
+                tB.golsContra += (jogo.golsA || 0);
+
+                if (jogo.golsB > jogo.golsA) { tB.vitorias++; tB.pontos += 3; }
+                else if (jogo.golsA > jogo.golsB) { tB.derrotas++; }
+                else { tB.empates++; tB.pontos += 1; }
+            }
+        });
+
+        // Formata e ordena
+        const lista = Object.values(statsFinal).map(t => {
+            t.saldoGols = t.golsPro - t.golsContra;
+            if (t.jogos > 0) {
+                const ap = (t.pontos / (t.jogos * 3)) * 100;
+                t.aproveitamentoNum = ap;
+                t.aproveitamento = ap.toFixed(1);
+            } else {
+                t.aproveitamentoNum = 0; t.aproveitamento = '0.0';
+            }
+            return t;
+        });
+
+        return this.ordenarTimes(lista);
     },
 
     // --- Lógica para Grupos ---
@@ -289,23 +436,18 @@ export default {
 
       const gruposObj = {};
 
-      // Inicializa com os nomes dos grupos do cadastro
       if (this.campeonato.grupos) {
         this.campeonato.grupos.forEach(g => { gruposObj[g.nome] = [] });
       }
 
-      // Distribui os times calculados nos seus grupos
       this.tabelaBase.forEach(timeStats => {
-        // Busca a qual grupo esse time pertence
         const grupoDoTime = this.campeonato.grupos.find(g => g.times.some(t => t.id === timeStats.id));
-
         if (grupoDoTime) {
           if (!gruposObj[grupoDoTime.nome]) gruposObj[grupoDoTime.nome] = [];
           gruposObj[grupoDoTime.nome].push(timeStats);
         }
       });
 
-      // Ordena cada grupo
       for (const nome in gruposObj) {
         gruposObj[nome] = this.ordenarTimes(gruposObj[nome]);
       }
@@ -315,7 +457,6 @@ export default {
 
     // --- Lógica para Mata-Mata ---
     dadosMataMata() {
-        // PERMITIR SE FOR MATA-MATA OU SE FOR GRUPOS COM JOGOS DE FASE
         if (!this.campeonato) return {};
         if (this.campeonato.tipo !== 'MATA_MATA' && !this.temMataMata) return {};
         
@@ -323,8 +464,7 @@ export default {
         const jogos = this.campeonato.jogos || [];
         
         jogos.forEach(jogo => {
-            // Importante: Ignorar jogos de grupo (que não têm 'fase')
-            if (!jogo.fase) return; 
+            if (!jogo.fase) return; // Ignora jogos de pontos corridos
 
             const nomeFase = jogo.fase;
             if (!fases[nomeFase]) fases[nomeFase] = {}; 
@@ -386,7 +526,6 @@ export default {
 
     temMataMata() {
       if (!this.campeonato || !this.campeonato.jogos) return false;
-      // Se existe algum jogo com a propriedade 'fase' definida, o mata-mata começou
       return this.campeonato.jogos.some(j => j.fase);
     },
   },
@@ -398,6 +537,7 @@ export default {
       if (tipo === 'PONTOS_CORRIDOS') return 'Pontos Corridos';
       if (tipo === 'MATA_MATA') return 'Mata-Mata';
       if (tipo === 'GRUPOS') return 'Fase de Grupos';
+      if (tipo === 'LIGA_COM_FINAL') return 'Liga + Final';
       return tipo;
     },
 
@@ -416,11 +556,10 @@ export default {
       }
     },
 
-    // Calcula estatísticas básicas (P, V, E, D, GP, GC) para TODOS os times
+    // Calcula stats da 1ª FASE (Jogos sem a propriedade 'fase')
     calcularStatsBase(camp) {
       const mapaStats = {};
       
-      // Inicializa para todos os times com 0
       camp.timesParticipantes.forEach(time => {
         mapaStats[time.id] = {
           id: time.id,
@@ -435,7 +574,7 @@ export default {
           camp.jogos.forEach(jogo => {
             if (!jogo.finalizado) return;
             
-            // Se for jogo de mata-mata (tem propriedade 'fase'), IGNORAMOS para a tabela de grupos
+            // SE TIVER FASE DEFINIDA (ex: Mata-mata ou Fase Final), ignoramos na tabela da 1ª fase
             if (jogo.fase) return; 
 
             const timeA = mapaStats[jogo.timeA.id];
@@ -443,7 +582,6 @@ export default {
             
             if (!timeA || !timeB) return;
 
-            // Incrementa stats
             timeA.jogos++; timeB.jogos++;
             timeA.golsPro += (jogo.golsA || 0); 
             timeA.golsContra += (jogo.golsB || 0);
@@ -480,7 +618,6 @@ export default {
         const valB = b[this.ordenacao.coluna];
         if (valA !== valB) return this.ordenacao.direcao === 'desc' ? valB - valA : valA - valB;
 
-        // Desempates
         if (b.pontos !== a.pontos) return b.pontos - a.pontos;
         if (b.vitorias !== a.vitorias) return b.vitorias - a.vitorias;
         if (b.saldoGols !== a.saldoGols) return b.saldoGols - a.saldoGols;
@@ -511,7 +648,6 @@ export default {
   max-width: 350px;
 }
 
-/* Scroll horizontal para o mata-mata */
 .d-flex.overflow-auto::-webkit-scrollbar {
   height: 8px;
 }
@@ -519,5 +655,8 @@ export default {
 .d-flex.overflow-auto::-webkit-scrollbar-thumb {
   background: #ccc;
   border-radius: 4px;
+}
+.qualy-success{
+  border-left: 4px solid #090;
 }
 </style>

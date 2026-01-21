@@ -20,6 +20,25 @@
                 v-model:nota="jogo.nota" 
                 @voltar="voltar" @salvar="salvarAlteracoes" @sharear="gerarShare"
             />
+
+            <div class="mx-2 mb-3">
+                <div class="bg-dark border border-secondary rounded p-2 position-relative">
+                    <label class="text-muted small ms-1 mb-1">📝 Observações do Jogo (Twitter style)</label>
+                    <textarea 
+                        v-model="jogo.observacao" 
+                        class="form-control bg-secondary text-white border-0" 
+                        rows="2" 
+                        maxlength="140"
+                        placeholder="Ex: Jogo difícil, gramado molhado, gol anulado..."
+                        @blur="salvarAlteracoes"
+                    ></textarea>
+                    <div class="text-end mt-1" style="font-size: 0.75rem;">
+                        <span :class="{'text-danger': (jogo.observacao?.length || 0) === 140, 'text-muted': (jogo.observacao?.length || 0) < 140}">
+                            {{ jogo.observacao?.length || 0 }} / 140
+                        </span>
+                    </div>
+                </div>
+            </div>
            
             <SocialShareModal v-model="modalShareAberto" :timeA="timeFullA" :timeB="timeFullB" :golsA="golsA"
                 :golsB="golsB" :eventos="jogo.eventos" nomeCampeonato="My Champs" :rodada="jogo.rodada" 
@@ -107,7 +126,7 @@ export default {
                 const jogoEncontrado = camp.jogos.find(j => String(j.id) === String(this.idJogo));
                 if (!jogoEncontrado) throw new Error("Jogo não encontrado");
 
-                // Inits
+                // Inits (Garante que os arrays existam)
                 jogoEncontrado.eventos = jogoEncontrado.eventos || [];
                 jogoEncontrado.substituicoes = jogoEncontrado.substituicoes || [];
                 jogoEncontrado.titularesA = jogoEncontrado.titularesA || [];
@@ -116,9 +135,10 @@ export default {
                 jogoEncontrado.craque = jogoEncontrado.craque || null;
                 jogoEncontrado.uniformeA = jogoEncontrado.uniformeA || null;
                 jogoEncontrado.uniformeB = jogoEncontrado.uniformeB || null;
-                
-                // Inicializa a nota se não existir
                 jogoEncontrado.nota = jogoEncontrado.nota || 0;
+                
+                // NOVO CAMPO: Observação (Inicia vazio se não existir)
+                jogoEncontrado.observacao = jogoEncontrado.observacao || '';
 
                 const timeGlobalA = await DbService.getTimeById(jogoEncontrado.timeA.id);
                 const timeGlobalB = await DbService.getTimeById(jogoEncontrado.timeB.id);
@@ -158,6 +178,7 @@ export default {
             this.jogo.golsB = this.golsB;
             this.jogo.finalizado = true;
             try {
+                // O campo this.jogo.observacao já está dentro do objeto this.jogo
                 await DbService.atualizarJogo(this.idCampeonato, JSON.parse(JSON.stringify(this.jogo)));
             } catch (error) { console.error(error); }
         },

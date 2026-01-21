@@ -14,6 +14,16 @@
       </div>
     </div>
 
+    <div v-if="!persistenciaGarantida" class="alert alert-warning small d-flex align-items-center mb-4 shadow-sm border-warning">
+        <span class="me-2 fs-5">⚠️</span>
+        <div>
+            <strong>Atenção:</strong> O navegador pode limpar seus dados se faltar espaço em disco.
+            <a href="#" @click.prevent="tentarPersistenciaManual" class="text-dark fw-bold text-decoration-underline ms-1">
+                Clique aqui para proteger seus dados permanentemente.
+            </a>
+        </div>
+    </div>
+
     <BRow class="mb-4 fade-in-up">
       <BCol md="3" sm="6" class="mb-3">
         <div class="stat-card p-3 border-start border-4 border-primary bg-dark rounded shadow-sm h-100">
@@ -124,6 +134,32 @@
               </div>
             </BButton>
 
+            <BButton variant="outline-warning" class="text-start p-3 d-flex align-items-center quick-btn" @click="$router.push('/hall-da-fama')">
+              <span class="fs-4 me-3">👑</span>
+              <div>
+                <div class="fw-bold text-white">Hall da Fama</div>
+                <div class="small text-muted">Ranking histórico de clubes</div>
+              </div>
+            </BButton>
+
+            <div class="border-top border-secondary my-1"></div>
+
+            <BButton variant="outline-info" class="text-start p-3 d-flex align-items-center quick-btn" @click="$router.push('/busca-jogadores')">
+              <span class="fs-4 me-3">🔎</span>
+              <div>
+                <div class="fw-bold text-white">Scout de Jogadores</div>
+                <div class="small text-muted">Buscar estatísticas e histórico</div>
+              </div>
+            </BButton>
+
+            <BButton v-if="temNacionalidade" variant="outline-success" class="text-start p-3 d-flex align-items-center quick-btn" @click="$router.push('/busca-nacionalidade')">
+              <span class="fs-4 me-3">🌍</span>
+              <div>
+                <div class="fw-bold text-white">Por Nacionalidade</div>
+                <div class="small text-muted">Filtrar jogadores por país</div>
+              </div>
+            </BButton>
+
           </div>
         </BCard>
       </BCol>
@@ -152,6 +188,8 @@ export default {
         totalJogos: 0,
         totalGols: 0
       },
+      temNacionalidade: false,
+      persistenciaGarantida: true, // Começa true para evitar 'flash' visual antes de verificar
       campeonatosAtivos: [],
       saudacao: 'Bem-vindo',
       hoje: new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
@@ -159,6 +197,10 @@ export default {
   },
   async mounted() {
     this.definirSaudacao();
+    
+    // 1. Verificação PASSIVA: Apenas checa se já tem, sem pedir permissão (evita bloqueio)
+    this.persistenciaGarantida = await DbService.verificarStatusPersistencia();
+    
     await this.carregarDashboard();
   },
   methods: {
@@ -169,25 +211,37 @@ export default {
       else this.saudacao = 'Boa noite';
     },
 
+    // 2. Verificação ATIVA: Chamada apenas no clique do botão
+    async tentarPersistenciaManual() {
+        const resultado = await DbService.solicitarPersistencia();
+        this.persistenciaGarantida = resultado;
+        
+        if(resultado) {
+            alert("Sucesso! O navegador confirmou que seus dados estão protegidos e não serão limpos automaticamente.");
+        } else {
+            alert("O navegador negou a persistência ou não suporta essa função.\n\nDica: Adicione este site aos favoritos e use-o frequentemente para que o navegador confie nele.");
+        }
+    },
+
     async carregarDashboard() {
       try {
-        // Carrega Times e Campeonatos
         const [times, campeonatos] = await Promise.all([
           DbService.getTimes(),
           DbService.getCampeonatos()
         ]);
 
-        // 1. Estatísticas Gerais
         this.stats.totalTimes = times.length;
         this.stats.totalCampeonatos = campeonatos.length;
         
+        this.temNacionalidade = times.some(t => 
+            t.jogadores && t.jogadores.some(j => j.nacionalidade)
+        );
+
         let totalJogosRealizados = 0;
         let totalGolsMarcados = 0;
 
-        // Itera sobre cada campeonato para somar jogos e gols reais
         campeonatos.forEach(c => {
             if(c.jogos && Array.isArray(c.jogos)) {
-                // Conta apenas jogos finalizados
                 const realizados = c.jogos.filter(j => j.finalizado);
                 totalJogosRealizados += realizados.length;
                 
@@ -202,7 +256,6 @@ export default {
         this.stats.totalJogos = totalJogosRealizados;
         this.stats.totalGols = totalGolsMarcados;
 
-        // 2. Campeonatos Ativos (Top 5 mais recentes que estão EM_ANDAMENTO)
         this.campeonatosAtivos = campeonatos
           .filter(c => c.status === 'EM_ANDAMENTO')
           .sort((a, b) => new Date(b.dataCriacao) - new Date(a.dataCriacao))
@@ -219,7 +272,8 @@ export default {
       const mapa = {
         'PONTOS_CORRIDOS': 'Pontos Corridos',
         'MATA_MATA': 'Mata-Mata',
-        'GRUPOS': 'Fase de Grupos'
+        'GRUPOS': 'Fase de Grupos',
+        'LIGA_COM_FINAL': 'Liga + Final'
       };
       return mapa[tipo] || tipo;
     },
@@ -255,16 +309,14 @@ export default {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Efeitos nos Cards de Estatística */
 .stat-card {
   transition: transform 0.2s;
-  background-color: #212529; /* Fallback caso não use o theme manager */
+  background-color: #212529; 
 }
 .stat-card:hover {
   transform: translateY(-5px);
 }
 
-/* Efeitos nos Itens de Lista */
 .action-row {
   transition: background-color 0.2s, transform 0.1s;
   border-left: 3px solid transparent;
@@ -274,7 +326,6 @@ export default {
   border-left: 3px solid var(--bs-primary);
 }
 
-/* Efeitos nos Botões Rápidos */
 .quick-btn {
   border: 1px solid rgba(255, 255, 255, 0.1);
   background-color: rgba(255, 255, 255, 0.02);
@@ -283,6 +334,5 @@ export default {
 .quick-btn:hover {
   background-color: rgba(255, 255, 255, 0.1);
   transform: translateX(5px);
-  border-color: var(--bs-primary);
 }
 </style>

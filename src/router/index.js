@@ -14,6 +14,9 @@ import Configuracoes from '@/views/Configuracoes.vue'
 import Sobre from '@/views/Sobre.vue'
 import ComoFunciona from '@/views/ComoFunciona.vue'
 import RelatorioImpressao from '@/views/RelatorioImpressao.vue'
+import BuscaJogadores from '@/views/BuscaJogadores.vue'
+import BuscaNacionalidade from '@/views/BuscaNacionalidade.vue'
+import HallDaFama from '@/views/HallDaFama.vue'
 
 const routes = [
   {
@@ -91,6 +94,21 @@ const routes = [
     path: '/campeonato/:id/imprimir',
     name: 'RelatorioImpressao',
     component: RelatorioImpressao
+  },
+  {
+    path: '/busca-jogadores',
+    name: 'BuscaJogadores',
+    component: BuscaJogadores
+  },
+  {
+    path: '/busca-nacionalidade',
+    name: 'BuscaNacionalidade',
+    component: BuscaNacionalidade
+  },
+  {
+    path: '/hall-da-fama',
+    name: 'HallDaFama',
+    component: HallDaFama
   },
   {
     path: '/about',

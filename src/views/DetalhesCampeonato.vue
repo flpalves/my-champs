@@ -46,12 +46,19 @@
                         @click="encerrarCampeonato">
                         🏆 Encerrar Campeonato
                     </BButton>
+                    
                     <BButton v-if="podeEncerrarFase" variant="success" @click="abrirModalEncerramento">
                         Encerrar Fase 🏁
                     </BButton>
+                    
                     <BButton v-if="podeEncerrarGrupos" variant="warning" @click="confirmarFimGrupos">
                         Encerrar Grupos 🏆
                     </BButton>
+
+                    <BButton v-if="podeEncerrarFaseInicialLiga" variant="warning" @click="confirmarFimFaseInicialLiga">
+                        Encerrar 1ª Fase 🏆
+                    </BButton>
+
                     <BButton variant="primary" @click="$router.push(`/campeonato/${campeonato.id}/classificacao`)">
                         Ver Tabela 📊
                     </BButton>
@@ -107,6 +114,9 @@
                                 <div class="text-center text-muted small mt-1 text-truncate"
                                     style="font-size: 0.65rem;">
                                     🏟️ {{ getEstadio(jogo.timeA.id) }}
+                                </div>
+                                <div class="text-center mt-1" v-if="jogo.observacao">
+                                    <span class="badge bg-secondary text-white" title="Ver observações">📝</span>
                                 </div>
                             </BCol>
                             <BCol cols="4" md="4" class="text-start px-1">
@@ -180,9 +190,8 @@
 
 <script>
 import DbService from '../services/DbService.js';
-import {
-    gerarJogosComByeSystem
-} from '../utils/GeradorTabela.js';
+import { gerarJogosComByeSystem } from '../utils/GeradorTabela.js';
+import { gerarPontuacaoHall } from '../utils/CalculadoraRanking.js'; // Importação do Hall da Fama
 
 import {
     BCard, BButton, BSpinner, BPagination, BRow, BCol, BFormInput, BAlert, BModal, BFormSelect, BBadge
@@ -202,7 +211,27 @@ export default {
             editandoNome: false,
             nomeTemp: '',
             modalEncerramentoAberto: false,
-            confrontosEncerramento: []
+            confrontosEncerramento: [],
+            
+            // Controle para salvar a rodada sem travar o banco
+            timerSalvarRodada: null 
+        }
+    },
+    watch: {
+        // Observa mudanças na rodada para salvar o histórico
+        rodadaAtual(novaRodada) {
+            if (!this.campeonato || this.carregando) return;
+
+            // Atualiza localmente
+            this.campeonato.ultimaRodadaVista = novaRodada;
+
+            // Debounce: Aguarda 1 segundo após a última mudança para salvar no banco
+            if (this.timerSalvarRodada) clearTimeout(this.timerSalvarRodada);
+            
+            this.timerSalvarRodada = setTimeout(() => {
+                // Salva silenciosamente (sem loading spinner)
+                DbService.atualizarCampeonato(this.campeonato).catch(err => console.error("Erro ao salvar rodada:", err));
+            }, 1000);
         }
     },
     computed: {
@@ -230,7 +259,6 @@ export default {
 
             let jogosDaFase = [];
 
-            // CORREÇÃO AQUI: Adicionado verificação para 'Bye' e 'Classificação Direta'
             if (faseAtual.includes('Playoff') || faseAtual.includes('Preliminar') || faseAtual.includes('Bye') || faseAtual.includes('Classificação Direta')) {
                 jogosDaFase = this.campeonato.jogos.filter(j =>
                     j.fase && (
@@ -263,6 +291,14 @@ export default {
             if (!this.campeonato || this.campeonato.status === 'ENCERRADO') return false;
             const jogos = this.campeonato.jogos || [];
             if (jogos.length === 0) return false;
+            
+            // Lógica para LIGA COM FINAL
+            if (this.campeonato.tipo === 'LIGA_COM_FINAL') {
+                const jogosFinal = this.campeonato.jogos.filter(j => j.fase === 'Fase Final');
+                if (jogosFinal.length === 0) return false;
+                return jogosFinal.every(j => j.finalizado);
+            }
+            
             if (this.campeonato.tipo === 'PONTOS_CORRIDOS') {
                 return jogos.every(j => j.finalizado);
             } else {
@@ -270,6 +306,18 @@ export default {
                 if (jogosFinal.length === 0) return false;
                 return jogosFinal.every(j => j.finalizado);
             }
+        },
+        // Computed para ativar o botão de "Encerrar 1ª Fase"
+        podeEncerrarFaseInicialLiga() {
+            if (this.campeonato.status === 'ENCERRADO') return false;
+            if (this.campeonato.tipo !== 'LIGA_COM_FINAL') return false;
+
+            // Se já tem jogos da "Fase Final", não mostra botão de encerrar fase inicial
+            const jaTemFinal = this.campeonato.jogos.some(j => j.fase === 'Fase Final');
+            if (jaTemFinal) return false;
+
+            // Todos os jogos atuais devem estar finalizados
+            return this.campeonato.jogos.every(j => j.finalizado);
         }
     },
     async mounted() {
@@ -283,6 +331,17 @@ export default {
                 const dados = await DbService.getCampeonatoById(this.id);
                 if (dados) {
                     this.campeonato = dados;
+                    
+                    // NOVA LÓGICA: Restaura a última rodada vista
+                    if (this.campeonato.ultimaRodadaVista) {
+                        if(this.campeonato.ultimaRodadaVista <= this.totalRodadas) {
+                            this.rodadaAtual = this.campeonato.ultimaRodadaVista;
+                        } else {
+                            this.rodadaAtual = 1;
+                        }
+                    } else {
+                        this.rodadaAtual = 1;
+                    }
                 }
             } catch (error) {
                 console.error("Erro ao carregar:", error);
@@ -290,14 +349,36 @@ export default {
                 this.carregando = false;
             }
         },
+
+        // --- ENCERRAMENTO COM HALL DA FAMA ---
         async encerrarCampeonato() {
-            if (!confirm("Deseja declarar este campeonato como ENCERRADO e arquivá-lo?")) return;
+            if (!confirm("Deseja declarar este campeonato como ENCERRADO e gerar pontos para o Hall da Fama?")) return;
+            
             try {
                 this.campeonato.status = 'ENCERRADO';
+                
+                // 1. Gera tabela final ordenada para cálculo (se for Liga/Pontos)
+                if (this.campeonato.tipo === 'PONTOS_CORRIDOS' || this.campeonato.tipo === 'LIGA_COM_FINAL') {
+                    this.campeonato.tabelaFinalSalva = this.calcularClassificacaoUnificada(); 
+                }
+
+                // 2. Calcula pontos do Hall
+                const regras = this.campeonato.regrasHall || {};
+                const resultadosHall = gerarPontuacaoHall(this.campeonato, regras);
+                
+                this.campeonato.resultadosHall = resultadosHall;
+
                 await DbService.atualizarCampeonato(this.campeonato);
-                alert("Campeonato encerrado com sucesso! 🏆");
-            } catch (error) { console.error(error); alert("Erro ao encerrar."); }
+                
+                alert("Campeonato encerrado! Pontos computados.");
+                this.$router.push('/hall-da-fama'); 
+                
+            } catch (error) { 
+                console.error(error); 
+                alert("Erro ao encerrar."); 
+            }
         },
+
         ativarEdicaoNome() {
             this.nomeTemp = this.campeonato.nome;
             this.editandoNome = true;
@@ -313,6 +394,8 @@ export default {
                 this.editandoNome = false;
             } catch (error) { console.error(error); alert("Erro ao renomear."); }
         },
+        
+        // --- FUNÇÕES AUXILIARES DE EXIBIÇÃO ---
         getSigla(time) {
             const timeCompleto = this.campeonato.timesParticipantes.find(t => t.id === time.id);
             if (timeCompleto && timeCompleto.sigla) return timeCompleto.sigla;
@@ -356,8 +439,6 @@ export default {
 
             let jogosDaFase = [];
 
-            // CORREÇÃO CRÍTICA AQUI TAMBÉM:
-            // Se a fase atual se chamar "Classificação Direta (Bye)", ela TAMBÉM deve puxar os jogos de Playoff.
             if (faseAtual.includes('Playoff') || faseAtual.includes('Preliminar') || faseAtual.includes('Bye') || faseAtual.includes('Classificação Direta')) {
                 jogosDaFase = this.campeonato.jogos.filter(j =>
                     j.fase && (
@@ -445,7 +526,112 @@ export default {
             finally { this.carregando = false; }
         },
 
-        // === FUNÇÃO ATUALIZADA COM DETECÇÃO INTELIGENTE DE MODO ===
+        // --- MÉTODOS PARA LIGA COM FINAL ---
+
+        async confirmarFimFaseInicialLiga() {
+            // 1. Pergunta as configurações NOVAMENTE para garantir
+            const padraoClassificados = this.campeonato.qtdClassificados || 4;
+            const inputQtd = prompt(`Quantos times devem avançar para a Fase Final?`, padraoClassificados);
+            if (inputQtd === null) return; // Cancelou
+            
+            const qtdClassificados = parseInt(inputQtd);
+            if (isNaN(qtdClassificados) || qtdClassificados < 2) return alert("Número inválido de classificados.");
+
+            const padraoTurnos = this.campeonato.turnosFaseFinal || 1;
+            const inputTurnos = prompt(`Quantos turnos na Fase Final? (1 = Único, 2 = Ida e Volta)`, padraoTurnos);
+            if(inputTurnos === null) return;
+            const turnosFinal = parseInt(inputTurnos);
+            if(turnosFinal !== 1 && turnosFinal !== 2) return alert("Turnos devem ser 1 ou 2.");
+
+            const inputZerar = confirm(`Deseja ZERAR a pontuação para a fase final?\n\n[OK] = Sim, zerar pontos.\n[Cancelar] = Não, manter pontos acumulados.`);
+            const zerarPontos = inputZerar;
+
+            // 2. Atualiza o objeto campeonato com o que o usuário acabou de confirmar
+            this.campeonato.qtdClassificados = qtdClassificados;
+            this.campeonato.turnosFaseFinal = turnosFinal;
+            this.campeonato.zerarPontos = zerarPontos;
+
+            // 3. Calcula e Gera
+            const classificacao = this.calcularClassificacaoUnificada();
+            const classificados = classificacao.slice(0, qtdClassificados);
+
+            if (!confirm(`Confirmação Final:\n\nAvamçam: ${qtdClassificados} times\nTurnos: ${turnosFinal}\nPontos: ${zerarPontos ? 'ZERADOS' : 'ACUMULADOS'}\n\nTimes: ${classificados.map(t=>t.nome).join(', ')}`)) return;
+
+            try {
+                this.carregando = true;
+                // Salva as configurações atualizadas antes de avançar
+                await DbService.atualizarCampeonato(this.campeonato);
+                
+                await DbService.avancarLigaParaFaseFinal(this.campeonato.id, classificados);
+                alert("Fase Final gerada com sucesso!");
+                await this.carregarCampeonato();
+                // O watch vai salvar o novo totalRodadas como ultimaRodadaVista automaticamente
+                this.rodadaAtual = this.totalRodadas; 
+            } catch (error) {
+                console.error(error);
+                alert("Erro ao gerar fase final.");
+            } finally {
+                this.carregando = false;
+            }
+        },
+
+        // Classificação Unificada
+        calcularClassificacaoUnificada() {
+            const mapaStats = {};
+            this.campeonato.timesParticipantes.forEach(t => {
+                mapaStats[t.id] = { ...t, pontos: 0, vitorias: 0, saldoGols: 0, golsPro: 0, jogos: 0 };
+            });
+
+            const temFaseFinal = this.campeonato.jogos.some(j => j.fase === 'Fase Final');
+            // IMPORTANTE: Lê o valor atualizado (pode ter sido mudado no prompt acima se ainda não salvou, mas aqui lê do data)
+            const zerar = this.campeonato.zerarPontos;
+
+            const jogosParaConsiderar = this.campeonato.jogos.filter(jogo => {
+                if (!jogo.finalizado) return false;
+                const isFaseFinal = jogo.fase === 'Fase Final';
+                const isFase1 = !jogo.fase;
+                return zerar ? isFaseFinal : (isFaseFinal || isFase1);
+            });
+
+            jogosParaConsiderar.forEach(jogo => {
+                const tA = mapaStats[jogo.timeA.id];
+                const tB = mapaStats[jogo.timeB.id];
+                if (tA) {
+                    tA.jogos++; tA.golsPro += (jogo.golsA || 0); tA.golsContra += (jogo.golsB || 0);
+                    if (jogo.golsA > jogo.golsB) { tA.pontos += 3; tA.vitorias++; }
+                    else if (jogo.golsB > jogo.golsA) { } 
+                    else { tA.pontos += 1; }
+                    tA.saldoGols = tA.golsPro - tA.golsContra;
+                }
+                if (tB) {
+                    tB.jogos++; tB.golsPro += (jogo.golsB || 0); tB.golsContra += (jogo.golsA || 0);
+                    if (jogo.golsB > jogo.golsA) { tB.pontos += 3; tB.vitorias++; }
+                    else if (jogo.golsA > jogo.golsB) { }
+                    else { tB.pontos += 1; }
+                    tB.saldoGols = tB.golsPro - tB.golsContra;
+                }
+            });
+
+            let lista = Object.values(mapaStats);
+            
+            if (temFaseFinal && zerar) {
+                const idsFinalistas = new Set();
+                this.campeonato.jogos.filter(j => j.fase === 'Fase Final').forEach(j => { 
+                    idsFinalistas.add(j.timeA.id); 
+                    idsFinalistas.add(j.timeB.id); 
+                });
+                lista = lista.filter(t => idsFinalistas.has(t.id));
+            }
+
+            return lista.sort((a, b) => {
+                if (b.pontos !== a.pontos) return b.pontos - a.pontos;
+                if (b.vitorias !== a.vitorias) return b.vitorias - a.vitorias;
+                return b.saldoGols - a.saldoGols;
+            });
+        },
+
+        // --- FIM MÉTODOS LIGA COM FINAL ---
+
         async confirmarFimGrupos() {
             // 1. Cálculos Básicos
             const classificacao = this.calcularClassificacaoGrupos();
@@ -462,44 +648,32 @@ export default {
             const logBase2 = Math.log2(totalClassificados);
             const ehPotenciaPerfeita = Number.isInteger(logBase2);
 
-            // === CORREÇÃO: DETECÇÃO DE MODO PARA CAMPEONATOS ANTIGOS ===
-            // Se o modo for PADRAO (padrão de campeonatos antigos), mas temos um número
-            // de times típico de Bye (6, 12, 24) e que não é potência de 2, perguntamos.
+            // DETECÇÃO DE MODO PARA CAMPEONATOS ANTIGOS
             if (modoKnockout === 'PADRAO' && !ehPotenciaPerfeita) {
-                // Ex: 6 times. Se for padrão, vai pedir repescagem. Se for Bye, funciona bem.
                 if ([6, 12, 24, 48].includes(totalClassificados)) {
                     const desejaBye = confirm(
                         `⚠️ DETECTADO: Você tem ${totalClassificados} classificados.\n\n` +
-                        `O modo atual é "PADRÃO" (exige repescagem de 3ºs colocados).\n` +
-                        `Mas esse número funciona perfeitamente com o Sistema "Bye" (Melhores folgam).\n\n` +
-                        `Deseja mudar para o Sistema "BYE" agora?`
+                        `O modo atual é "PADRÃO". Deseja mudar para o Sistema "BYE" agora?`
                     );
                     if (desejaBye) modoKnockout = 'BYE';
                 }
             }
 
-            console.log("Modo Final Definido:", modoKnockout);
-
-            // === LÓGICA 1: SISTEMA DE BYE / PLAYOFFS ===
+            // SISTEMA DE BYE / PLAYOFFS
             if (modoKnockout === 'BYE') {
                 if (totalClassificados < 3) { alert("Poucos times para sistema de Bye."); return; }
-                if (!confirm(`CONFIRMAÇÃO SISTEMA DE BYE:\nExistem ${totalClassificados} classificados.\nO sistema dará folga para os melhores e criará um playoff preliminar para os outros.\n\nDeseja confirmar?`)) return;
+                if (!confirm(`CONFIRMAÇÃO SISTEMA DE BYE:\nExistem ${totalClassificados} classificados.\nDeseja confirmar?`)) return;
 
                 try {
                     this.carregando = true;
-                    // Gera jogos (Playoffs + Byes fake)
                     const novosJogos = gerarJogosComByeSystem(
                         timesClassificados,
-                        this.campeonato.turnos, // <--- AQUI ESTÁ A CORREÇÃO (passa 1 ou 2 dinamicamente)
+                        this.campeonato.turnos,
                         this.totalRodadas
                     )
-
                     this.campeonato.jogos.push(...novosJogos);
-                    // IMPORTANTE: Atualizar o modo no banco caso tenha sido alterado dinamicamente
                     this.campeonato.modoKnockout = 'BYE';
-
                     await DbService.atualizarCampeonato(this.campeonato);
-
                     alert("Fase Preliminar e Byes gerados com sucesso!");
                     await this.carregarCampeonato();
                     this.rodadaAtual = this.totalRodadas;
@@ -509,10 +683,10 @@ export default {
                 } finally {
                     this.carregando = false;
                 }
-                return; // FIM LÓGICA BYE
+                return; 
             }
 
-            // === LÓGICA 2: PADRÃO (REPESCAGEM E POTÊNCIAS DE 2) ===
+            // PADRÃO (REPESCAGEM)
             let usarRepescagem = this.campeonato.usarRepescagem || false;
             let timesRestantes = [];
 
@@ -521,11 +695,10 @@ export default {
                 timesRestantes.push(...grupo.slice(qtdDiretos));
             }
 
-            // Oferta de repescagem de segurança
             if (!ehPotenciaPerfeita && !usarRepescagem) {
                 const proximaPotencia = Math.pow(2, Math.ceil(Math.log2(totalClassificados)));
                 const faltam = proximaPotencia - totalClassificados;
-                if (confirm(`⚠️ MODO PADRÃO (REPESCAGEM):\nTemos ${totalClassificados} classificados (Chave quebrada).\nDeseja ativar a REPESCAGEM agora para classificar mais ${faltam} times (Melhores 3ºs)?`)) {
+                if (confirm(`⚠️ MODO PADRÃO:\nDeseja ativar a REPESCAGEM agora para classificar mais ${faltam} times?`)) {
                     usarRepescagem = true;
                 }
             }
@@ -580,6 +753,10 @@ export default {
         },
 
         calcularClassificacaoGrupos() {
+            if (this.campeonato.tipo === 'LIGA_COM_FINAL') {
+                return { 'Tabela': this.calcularClassificacaoUnificada() };
+            }
+
             const mapaStats = {};
             this.campeonato.timesParticipantes.forEach(t => {
                 mapaStats[t.id] = { ...t, pontos: 0, vitorias: 0, saldoGols: 0, golsPro: 0 };
