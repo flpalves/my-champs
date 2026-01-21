@@ -358,6 +358,19 @@
         </div>
 
         <div class="mt-4 d-grid gap-2">
+          <div
+            class="d-flex justify-content-between align-items-center bg-dark border border-secondary p-3 rounded mb-4">
+            <div>
+              <h6 class="text-warning mb-1">👑 Hall da Fama</h6>
+              <div class="text-muted small" v-if="!regrasHallDefinidas">Configuração padrão será usada.</div>
+              <div class="text-success small fw-bold" v-else>Pontuação personalizada definida!</div>
+            </div>
+            <BButton variant="outline-warning" size="sm" @click="this.fuder">
+              Configurar Pontuação
+            </BButton>
+            <ConfiguracaoPontuacaoModal v-model="modalPontuacaoAberto" :tipo="campeonato.tipo" :qtd-times="idsSelecionados.length"
+              @salvar="salvarRegrasHall" />
+          </div>
           <BButton type="submit" variant="success" size="lg">
             Salvar Campeonato
           </BButton>
@@ -371,7 +384,7 @@
 <script>
 import DbService from '../services/DbService.js';
 import { gerarJogosGrupos, gerarJogosMataMata } from '../utils/GeradorTabela.js';
-
+import ConfiguracaoPontuacaoModal from '@/components/ConfiguracaoPontuacaoModal.vue';
 import {
   BCard, BForm, BFormGroup, BFormInput, BFormSelect,
   BRow, BCol, BButton, BBadge, BInputGroup, BInputGroupText, BAlert
@@ -381,7 +394,7 @@ export default {
   name: 'CadastroCampeonato',
   components: {
     BCard, BForm, BFormGroup, BFormInput, BFormSelect,
-    BRow, BCol, BButton, BBadge, BInputGroup, BInputGroupText, BAlert
+    BRow, BCol, BButton, BBadge, BInputGroup, BInputGroupText, BAlert, ConfiguracaoPontuacaoModal
   },
   data() {
     return {
@@ -389,6 +402,8 @@ export default {
       termoBusca: '',
       todosOsTimes: [],
       idsSelecionados: [],
+      modalPontuacaoAberto: false,
+      regrasHallDefinidas: null, // Armazena o que veio do modal
 
       campeonato: {
         nome: '',
@@ -425,6 +440,7 @@ export default {
     }
   },
   computed: {
+
     timesParaExibir() {
       if (!this.termoBusca) return this.todosOsTimes;
       const termo = this.termoBusca.toLowerCase();
@@ -530,6 +546,10 @@ export default {
         this.auxiliares.timeSelecionadoParaGrupo[index] = null;
       }
     },
+    fuder() {
+      alert('fuder');
+      this.modalPontuacaoAberto = true;
+    },
     removerDoGrupoManual(index, timeId) {
       this.configGrupos.gruposManuais[index].times = this.configGrupos.gruposManuais[index].times.filter(t => t.id !== timeId);
     },
@@ -586,6 +606,11 @@ export default {
       this.previewJogos = gerarJogosMataMata(timesOrdenados, this.campeonato.turnos);
     },
 
+    salvarRegrasHall(regras) {
+      this.regrasHallDefinidas = regras;
+      alert("Pontuação do Hall da Fama configurada com sucesso!");
+    },
+
     async salvarCampeonato() {
       const erros = [];
 
@@ -606,6 +631,8 @@ export default {
         return;
       }
 
+      const regrasFinais = this.regrasHallDefinidas || {};
+
       const dados = {
         ...this.campeonato,
         times: this.timesSelecionadosObj,
@@ -620,6 +647,7 @@ export default {
         turnosFaseFinal: this.campeonato.tipo === 'LIGA_COM_FINAL' ? parseInt(this.configLiga.turnosFaseFinal) : null,
         qtdClassificados: this.campeonato.tipo === 'LIGA_COM_FINAL' ? parseInt(this.configLiga.qtdClassificados) : null,
         zerarPontos: this.campeonato.tipo === 'LIGA_COM_FINAL' ? Boolean(this.configLiga.zerarPontos) : false,
+        regrasHall: regrasFinais
 
       };
 

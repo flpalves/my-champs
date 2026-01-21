@@ -115,6 +115,9 @@
                                     style="font-size: 0.65rem;">
                                     🏟️ {{ getEstadio(jogo.timeA.id) }}
                                 </div>
+                                <div class="text-center mt-1" v-if="jogo.observacao">
+                                    <span class="badge bg-secondary text-white" title="Ver observações">📝</span>
+                                </div>
                             </BCol>
                             <BCol cols="4" md="4" class="text-start px-1">
                                 <div class="d-flex align-items-center justify-content-start gap-2">
@@ -187,9 +190,8 @@
 
 <script>
 import DbService from '../services/DbService.js';
-import {
-    gerarJogosComByeSystem
-} from '../utils/GeradorTabela.js';
+import { gerarJogosComByeSystem } from '../utils/GeradorTabela.js';
+import { gerarPontuacaoHall } from '../utils/CalculadoraRanking.js'; // Importação do Hall da Fama
 
 import {
     BCard, BButton, BSpinner, BPagination, BRow, BCol, BFormInput, BAlert, BModal, BFormSelect, BBadge
@@ -332,7 +334,6 @@ export default {
                     
                     // NOVA LÓGICA: Restaura a última rodada vista
                     if (this.campeonato.ultimaRodadaVista) {
-                        // Verifica se a rodada ainda é válida (caso tenha deletado fases, etc)
                         if(this.campeonato.ultimaRodadaVista <= this.totalRodadas) {
                             this.rodadaAtual = this.campeonato.ultimaRodadaVista;
                         } else {
@@ -348,14 +349,36 @@ export default {
                 this.carregando = false;
             }
         },
+
+        // --- ENCERRAMENTO COM HALL DA FAMA ---
         async encerrarCampeonato() {
-            if (!confirm("Deseja declarar este campeonato como ENCERRADO e arquivá-lo?")) return;
+            if (!confirm("Deseja declarar este campeonato como ENCERRADO e gerar pontos para o Hall da Fama?")) return;
+            
             try {
                 this.campeonato.status = 'ENCERRADO';
+                
+                // 1. Gera tabela final ordenada para cálculo (se for Liga/Pontos)
+                if (this.campeonato.tipo === 'PONTOS_CORRIDOS' || this.campeonato.tipo === 'LIGA_COM_FINAL') {
+                    this.campeonato.tabelaFinalSalva = this.calcularClassificacaoUnificada(); 
+                }
+
+                // 2. Calcula pontos do Hall
+                const regras = this.campeonato.regrasHall || {};
+                const resultadosHall = gerarPontuacaoHall(this.campeonato, regras);
+                
+                this.campeonato.resultadosHall = resultadosHall;
+
                 await DbService.atualizarCampeonato(this.campeonato);
-                alert("Campeonato encerrado com sucesso! 🏆");
-            } catch (error) { console.error(error); alert("Erro ao encerrar."); }
+                
+                alert("Campeonato encerrado! Pontos computados.");
+                this.$router.push('/hall-da-fama'); 
+                
+            } catch (error) { 
+                console.error(error); 
+                alert("Erro ao encerrar."); 
+            }
         },
+
         ativarEdicaoNome() {
             this.nomeTemp = this.campeonato.nome;
             this.editandoNome = true;
@@ -371,6 +394,8 @@ export default {
                 this.editandoNome = false;
             } catch (error) { console.error(error); alert("Erro ao renomear."); }
         },
+        
+        // --- FUNÇÕES AUXILIARES DE EXIBIÇÃO ---
         getSigla(time) {
             const timeCompleto = this.campeonato.timesParticipantes.find(t => t.id === time.id);
             if (timeCompleto && timeCompleto.sigla) return timeCompleto.sigla;

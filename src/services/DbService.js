@@ -240,7 +240,7 @@ export default {
             qtdClassificados: dadosBasicos.qtdClassificados ? parseInt(dadosBasicos.qtdClassificados) : null,
             zerarPontos: dadosBasicos.zerarPontos !== undefined ? Boolean(dadosBasicos.zerarPontos) : false,
             // ====================================================
-
+            regrasHall: dadosBasicos.regrasHall || {},
             dataCriacao: new Date().toISOString(),
             status: 'EM_ANDAMENTO',
             timesParticipantes: JSON.parse(JSON.stringify(dadosBasicos.times)),
@@ -338,11 +338,12 @@ export default {
         return true;
     },
 
-    // =================================================================
-    // 3. PERSISTÊNCIA, BACKUP E UTILITÁRIOS
-    // =================================================================
-
-    // [CORREÇÃO] Esta função foi restaurada para evitar o erro no App.vue
+    async verificarStatusPersistencia() {
+        if (navigator.storage && navigator.storage.persisted) {
+            return await navigator.storage.persisted();
+        }
+        return false;
+    },
     async solicitarPersistencia() {
         if (navigator.storage && navigator.storage.persist) {
             const isPersisted = await navigator.storage.persisted();
