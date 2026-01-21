@@ -8,16 +8,23 @@
         </h1>
         <p class="text-muted small mb-0">Painel de Controle de jogos de Futebol,<br> ou qualquer coisa parecida xD</p>
       </div>
-      <div class="text-end d-none d-md-block">
-        <span class="d-block text-white fw-bold">{{ saudacao }}, Treinador.</span>
-        <span class="text-muted small">{{ hoje }}</span>
+      
+      <div class="text-end">
+        <div class="d-none d-md-block mb-2">
+            <span class="d-block text-white fw-bold">{{ saudacao }}, Treinador.</span>
+            <span class="text-muted small">{{ hoje }}</span>
+        </div>
+        <BButton variant="outline-light" size="sm" class="d-flex align-items-center gap-2 ms-auto" @click="abrirModalMundos">
+            <span>🌍 {{ nomeMundoAtual }}</span>
+            <span class="badge bg-secondary text-dark" style="font-size: 0.6rem;">Trocar</span>
+        </BButton>
       </div>
     </div>
 
     <div v-if="!persistenciaGarantida" class="alert alert-warning small d-flex align-items-center mb-4 shadow-sm border-warning">
         <span class="me-2 fs-5">⚠️</span>
         <div>
-            <strong>Atenção:</strong> O navegador pode limpar seus dados se faltar espaço em disco.
+            <strong>Atenção:</strong> O navegador pode limpar seus dados se faltar espaço.
             <a href="#" @click.prevent="tentarPersistenciaManual" class="text-dark fw-bold text-decoration-underline ms-1">
                 Clique aqui para proteger seus dados permanentemente.
             </a>
@@ -144,7 +151,7 @@
 
             <div class="border-top border-secondary my-1"></div>
 
-            <BButton variant="outline-info" class="text-start p-3 d-flex align-items-center quick-btn" @click="$router.push('/busca-jogadores')">
+            <BButton variant="outline-info" class="text-start p-3 d-flex align-items-center quick-btn" @click="$router.push('/scout')">
               <span class="fs-4 me-3">🔎</span>
               <div>
                 <div class="fw-bold text-white">Scout de Jogadores</div>
@@ -152,7 +159,7 @@
               </div>
             </BButton>
 
-            <BButton v-if="temNacionalidade" variant="outline-success" class="text-start p-3 d-flex align-items-center quick-btn" @click="$router.push('/busca-nacionalidade')">
+            <BButton v-if="temNacionalidade" variant="outline-success" class="text-start p-3 d-flex align-items-center quick-btn" @click="$router.push('/scout-nacionalidade')">
               <span class="fs-4 me-3">🌍</span>
               <div>
                 <div class="fw-bold text-white">Por Nacionalidade</div>
@@ -165,19 +172,54 @@
       </BCol>
     </BRow>
 
+    <BModal v-model="modalMundosAberto" title="🌍 Gerenciar Mundos (Saves)" hide-footer size="lg" 
+            header-bg-variant="dark" header-text-variant="white" body-bg-variant="dark" body-text-variant="white">
+        <div class="p-2">
+            <p class="text-muted small">
+                Crie universos paralelos para seus campeonatos. Ex: Um mundo para "Futebol Retro", outro para "FIFA", etc.
+            </p>
+
+            <div class="d-flex gap-2 mb-4">
+                <BFormInput v-model="novoSlotNome" placeholder="Nome do novo mundo..." class="bg-secondary text-white border-secondary" @keyup.enter="criarNovoMundo" />
+                <BButton variant="success" @click="criarNovoMundo">Criar</BButton>
+            </div>
+
+            <div class="list-group">
+                <div v-for="slot in slots" :key="slot.id" class="list-group-item bg-dark border-secondary text-white d-flex justify-content-between align-items-center">
+                    <div>
+                        <span v-if="slot.id === activeSlotId" class="text-success fw-bold me-2">●</span>
+                        <span class="fw-bold">{{ slot.alias }}</span>
+                        <div class="small text-muted">Criado em: {{ formatarData(slot.criadoEm) }}</div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <BButton v-if="slot.id !== activeSlotId" size="sm" variant="outline-primary" @click="trocarMundo(slot.id)">
+                            Carregar
+                        </BButton>
+                        <BButton v-if="slot.id === activeSlotId" size="sm" variant="success" disabled>
+                            Ativo
+                        </BButton>
+                        <BButton v-if="slot.id !== activeSlotId" size="sm" variant="outline-danger" @click="excluirMundo(slot.id)">
+                            🗑️
+                        </BButton>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </BModal>
+
   </div>
 </template>
 
 <script>
 import DbService from '../services/DbService.js';
 import { 
-  BRow, BCol, BCard, BButton, BBadge, BSpinner 
+  BRow, BCol, BCard, BButton, BBadge, BSpinner, BModal, BFormInput 
 } from 'bootstrap-vue-next';
 
 export default {
   name: 'Home',
   components: {
-    BRow, BCol, BCard, BButton, BBadge, BSpinner
+    BRow, BCol, BCard, BButton, BBadge, BSpinner, BModal, BFormInput
   },
   data() {
     return {
@@ -189,18 +231,33 @@ export default {
         totalGols: 0
       },
       temNacionalidade: false,
-      persistenciaGarantida: true, // Começa true para evitar 'flash' visual antes de verificar
+      persistenciaGarantida: true,
       campeonatosAtivos: [],
+      
+      // DADOS DE MUNDOS (SLOTS)
+      modalMundosAberto: false,
+      slots: [],
+      activeSlotId: 0,
+      novoSlotNome: '',
+
       saudacao: 'Bem-vindo',
       hoje: new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
     }
   },
+  computed: {
+      nomeMundoAtual() {
+          const slot = this.slots.find(s => s.id === this.activeSlotId);
+          return slot ? slot.alias : 'Carregando...';
+      }
+  },
   async mounted() {
     this.definirSaudacao();
     
-    // 1. Verificação PASSIVA: Apenas checa se já tem, sem pedir permissão (evita bloqueio)
+    // 1. Persistência
     this.persistenciaGarantida = await DbService.verificarStatusPersistencia();
     
+    // 2. Carrega Dados
+    await this.carregarSlots();
     await this.carregarDashboard();
   },
   methods: {
@@ -211,18 +268,49 @@ export default {
       else this.saudacao = 'Boa noite';
     },
 
-    // 2. Verificação ATIVA: Chamada apenas no clique do botão
     async tentarPersistenciaManual() {
         const resultado = await DbService.solicitarPersistencia();
         this.persistenciaGarantida = resultado;
         
         if(resultado) {
-            alert("Sucesso! O navegador confirmou que seus dados estão protegidos e não serão limpos automaticamente.");
+            alert("Sucesso! O navegador confirmou que seus dados estão protegidos.");
         } else {
-            alert("O navegador negou a persistência ou não suporta essa função.\n\nDica: Adicione este site aos favoritos e use-o frequentemente para que o navegador confie nele.");
+            alert("O navegador negou a persistência ou já a gerencia automaticamente.");
         }
     },
 
+    // --- GERENCIAMENTO DE MUNDOS ---
+    abrirModalMundos() {
+        this.modalMundosAberto = true;
+    },
+    async carregarSlots() {
+        this.slots = await DbService.getSlots();
+        this.activeSlotId = await DbService.getActiveSlotId();
+    },
+    async criarNovoMundo() {
+        if (!this.novoSlotNome.trim()) return alert("Digite um nome para o mundo.");
+        await DbService.criarSlot(this.novoSlotNome);
+        this.novoSlotNome = '';
+        await this.carregarSlots();
+        alert("Novo mundo criado com sucesso!");
+    },
+    async trocarMundo(id) {
+        if (confirm("Deseja carregar este mundo? A página será recarregada.")) {
+            await DbService.trocarSlot(id);
+        }
+    },
+    async excluirMundo(id) {
+        if (confirm("Tem certeza? Todos os times e campeonatos deste mundo serão apagados permanentemente.")) {
+            try {
+                await DbService.excluirSlot(id);
+                await this.carregarSlots();
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+    },
+
+    // --- DASHBOARD ---
     async carregarDashboard() {
       try {
         const [times, campeonatos] = await Promise.all([
@@ -291,7 +379,6 @@ export default {
 </script>
 
 <style scoped>
-/* Pequenas animações de entrada */
 .fade-in {
   animation: fadeIn 0.8s ease-out;
 }
