@@ -1,6 +1,6 @@
 # ⚽ My Champs - Football Manager System
 
-Bem-vindo ao **My Champs**, o sistema de gestão esportiva que aposenta suas planilhas de Excel.
+Bem-vindo ao **My Champs**, o sistema de gestão esportiva que aposenta suas planilhas de Excel e transforma seu navegador em um console de administração de ligas.
 
 Este projeto é uma **Single Page Application (SPA)** desenvolvida para organizar torneios de futebol (campo, futsal, society), futebol de botão ou campeonatos de e-sports (FIFA, PES) de forma agnóstica, offline e reativa.
 
@@ -10,40 +10,52 @@ Este projeto é uma **Single Page Application (SPA)** desenvolvida para organiza
 
 ---
 
-## 🚀 O que este sistema faz?
+## 🚀 O que há de novo? (Versão 2.0)
 
-Basicamente, ele transforma você no "Cartola" da sua liga. As principais *features* incluem:
+O sistema evoluiu drasticamente! Confira as novas funcionalidades implementadas:
 
-* **Gestão de Clubes:** Cadastro de times com elenco flexível (não exige 11 titulares), escudos personalizados e **esquemas de cores (uniformes)**.
-* **Motor de Campeonatos:**
-    * Pontos Corridos (Turno/Returno).
-    * Mata-Mata (Sorteio ou Manual).
-    * **Fase de Grupos Híbrida:** Grupos que evoluem automaticamente para Mata-Mata (ex: cruzamento olímpico 1ºA x 2ºB).
-* **Súmula em Tempo Real:** Uma interface completa para operar a partida, registrando gols, cartões, **linha do tempo (timeline)**, substituições e escolha de uniformes.
-* **Persistência Offline:** Tudo é salvo no `IndexedDB` do navegador. Sem backend, sem delay, sem custos de servidor.
-* **Backup & Restore:** Funcionalidade robusta para exportar (`.json`) e importar dados (com opção de mesclagem inteligente).
+### 👑 Hall da Fama & Ranking Histórico
+Agora seus campeonatos valem mais do que apenas a taça momentânea.
+* **Pontuação Dinâmica:** Configure regras de pontuação personalizadas ao criar o torneio (ex: Campeão ganha 100pts, Vice 70pts).
+* **Ranking Global:** Uma tela dedicada que soma os pontos de **todos** os campeonatos encerrados para definir quem é o maior clube da história do seu save.
+* **Contagem de Títulos:** Monitoramento automático de troféus e vices.
+
+### 🌍 Scout Global (Olheiro)
+Encontre qualquer jogador no seu banco de dados em segundos.
+* **Busca por Jogador:** Pesquise por nome e veja o histórico completo de partidas, gols e prêmios de "Melhor em Campo" (Hat-tricks).
+* **Visualização de Overall:** Identifique craques rapidamente pelo badge colorido de nível.
+
+### 🛡️ Persistência de Dados Blindada
+Chega de perder dados porque o navegador limpou o cache!
+* **Verificação Ativa:** O sistema detecta se o armazenamento é volátil.
+* **Solicitação de Permissão:** Um alerta na Home permite solicitar ao navegador o modo de **Armazenamento Persistente**, protegendo seu save contra limpezas automáticas de disco.
+
+### 📝 Engine de Jogo Aprimorada
+* **Observações na Súmula:** Campo estilo "Twitter" (140 caracteres) para registrar narrativas da partida (ex: "Goleiro pegou pênalti aos 90'").
+* **Memória de Navegação:** O sistema lembra a última rodada que você visitou ao voltar para a tela do campeonato.
+* **Liga + Fase Final:** Novo modo híbrido onde você joga pontos corridos e os melhores avançam para um mata-mata (com opção de zerar pontos ou não).
 
 ---
 
-## 🛠️ Stack Tecnológica
+## ⚙️ Funcionalidades Principais
 
-O motor debaixo do capô é moderno e leve:
-
-* **Core:** [Vue.js 3](https://vuejs.org/) (Options API para legibilidade clássica).
-* **UI Framework:** [Bootstrap 5](https://getbootstrap.com/) + `bootstrap-vue-next` (porque ninguém merece escrever CSS de grid do zero).
-* **Banco de Dados:** [LocalForage](https://localforage.github.io/localForage/) (Wrapper elegante para IndexedDB).
-* **Roteamento:** Vue Router 4.
-* **Build Tool:** Vue CLI / Webpack.
+* **Múltiplos Mundos (Slots):** Crie saves paralelos (ex: "Liga Retro 90s" em um slot, "FIFA 25" em outro) sem misturar os dados.
+* **Gestão de Clubes:** Cadastro flexível de times, escudos e uniformes.
+* **Criação de Torneios:**
+    * Pontos Corridos.
+    * Mata-Mata (com chaveamento inteligente).
+    * Fase de Grupos (com evolução para Mata-Mata e suporte a Repescagem).
+    * **NOVO:** Liga + Fase Final.
+* **Súmula em Tempo Real:** Linha do tempo (timeline) de eventos, substituições, escolha de craque do jogo e uniformes.
+* **Backup & Restore:** Exporte seus dados para JSON e importe em qualquer outro dispositivo.
 
 ---
 
 ## 💻 Como rodar localmente
 
-Se você quer codar, testar ou apenas brincar de técnico, siga os passos:
-
 1.  **Clone o repositório:**
     ```bash
-    git clone [https://github.com/flpalves/my-champs.git](https://github.com/flpalves/my-champs.git)
+    git clone [https://github.com/seu-usuario/my-champs.git](https://github.com/seu-usuario/my-champs.git)
     cd my-champs
     ```
 
@@ -57,31 +69,33 @@ Se você quer codar, testar ou apenas brincar de técnico, siga os passos:
     npm run serve
     ```
 
-4.  Acesse `http://localhost:8080` e escale seu time.
+4.  Acesse `http://localhost:8080`.
 
 ---
 
-## 📂 Estrutura do Projeto (Onde mexer?)
+## 📂 Estrutura do Projeto (Mapa da Mina)
 
-Para você não se perder no código, aqui vai o mapa da mina:
-
-* `src/services/DbService.js`: **O Cérebro do Banco.** Toda leitura, escrita, backup e lógica de persistência (IndexedDB) está aqui. Se quiser mudar como os dados são salvos, é aqui que você mexe.
-* `src/utils/GeradorTabela.js`: **O Matemático.** Contém os algoritmos de *Round Robin* (todos contra todos) e geração de chaves de mata-mata.
-* `src/components/`: Onde a mágica visual acontece.
-    * `SumulaJogo.vue`: O componente "monstro" que gerencia a partida. **Dica:** Ele foi refatorado em sub-componentes na pasta `src/components/sumula/` (Header, Eventos, Timeline, etc.).
-    * `DetalhesCampeonato.vue`: Gerencia a classificação e a transição de fases.
-    * `TabelaClassificacao.vue`: A lógica de cálculo de pontos, saldo de gols e ordenação.
+* `src/services/DbService.js`: **O Núcleo.** Gerencia o IndexedDB, Slots, Persistência e a lógica pesada de salvar/carregar.
+* `src/utils/`:
+    * `GeradorTabela.js`: Algoritmos de Round Robin e emparelhamento.
+    * `CalculadoraRanking.js`: **(Novo)** Lógica para computar pontos do Hall da Fama.
+* `src/components/hall/`: **(Novo)** Componentes modais para configuração de pontuação.
+* `src/views/`:
+    * `HomeView.vue`: Dashboard principal com verificação de persistência.
+    * `HallDaFama.vue`: Tela de ranking histórico.
+    * `BuscaJogadores.vue`: Tela de Scout.
+    * `DetalhesCampeonato.vue`: O "cérebro" da gestão do torneio ativo.
 
 ---
 
-## 🔧 Guia de Customização
+## 🔧 Dica de Segurança (Persistência)
 
-Quer alterar uma feature? Aqui estão alguns cenários comuns:
+Navegadores baseados em Chromium (Chrome, Edge, Brave) podem limpar dados do `IndexedDB` se o disco estiver cheio, a menos que o usuário conceda permissão explícita.
 
-### "Quero mudar a regra de pontuação (ex: vitória valendo 2 pontos)"
-Vá em `src/components/DetalhesCampeonato.vue` (ou `TabelaClassificacao.vue`), procure o método `calcularClassificacaoGrupos` ou `calcularStatsBase` e altere a lógica de soma:
-```javascript
-// Exemplo:
-if (jogo.golsA > jogo.golsB) {
-    tA.pontos += 3; // Mude para 2 aqui se quiser ser "old school"
-}
+1.  Ao abrir o **My Champs**, verifique se há um alerta amarelo na Home.
+2.  Se houver, clique no link **"Clique aqui para proteger seus dados"**.
+3.  Isso garante que seu save seja tratado como "Dourado" pelo navegador e nunca seja apagado automaticamente.
+
+---
+
+Desenvolvido com ⚽ e Vue.js.

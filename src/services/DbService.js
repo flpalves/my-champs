@@ -58,7 +58,6 @@ export default {
         console.log("⚙️ Inicializando sistema de Slots...");
         
         // 1. Tenta buscar os dados no formato antigo (Raiz)
-        // Isso bate exatamente com o padrão que você enviou: "lista_campeonatos" e "lista_times"
         const timesAntigos = await localforage.getItem('lista_times');
         const campsAntigos = await localforage.getItem('lista_campeonatos');
 
@@ -87,8 +86,7 @@ export default {
                 await localforage.setItem(`slot_0_${DATA_KEYS.CAMPEONATOS}`, campsAntigos);
             }
             
-            // 4. Limpa as chaves antigas para evitar duplicidade e confusão futura
-            // Opcional: Você pode comentar essas linhas se quiser manter um backup "fantasma" na raiz por enquanto
+            // 4. Limpa as chaves antigas para evitar duplicidade
             await localforage.removeItem('lista_times');
             await localforage.removeItem('lista_campeonatos');
             
@@ -240,7 +238,10 @@ export default {
             qtdClassificados: dadosBasicos.qtdClassificados ? parseInt(dadosBasicos.qtdClassificados) : null,
             zerarPontos: dadosBasicos.zerarPontos !== undefined ? Boolean(dadosBasicos.zerarPontos) : false,
             // ====================================================
+            
+            // Dados Hall da Fama
             regrasHall: dadosBasicos.regrasHall || {},
+
             dataCriacao: new Date().toISOString(),
             status: 'EM_ANDAMENTO',
             timesParticipantes: JSON.parse(JSON.stringify(dadosBasicos.times)),
@@ -338,12 +339,40 @@ export default {
         return true;
     },
 
+    async avancarLigaParaFaseFinal(idCampeonato, timesClassificados) {
+        const campeonato = await this.getCampeonatoById(idCampeonato);
+        if (!campeonato) throw new Error("Campeonato não encontrado");
+
+        const maxRodada = campeonato.jogos.reduce((max, j) => Math.max(max, j.rodada), 0);
+        const turnosFinal = parseInt(campeonato.turnosFaseFinal) || 1;
+
+        let novosJogos = gerarJogosFaseFinalPontosCorridos(timesClassificados, turnosFinal, maxRodada);
+        
+        // Vincula ID
+        novosJogos = novosJogos.map(j => ({ ...j, campeonatoId: idCampeonato }));
+        
+        campeonato.jogos = [...campeonato.jogos, ...novosJogos];
+        
+        // Atualiza status se necessário ou marca flag interna
+        // campeonato.faseAtual = 'Fase Final'; 
+
+        await this.atualizarCampeonato(campeonato);
+        return true;
+    },
+
+    // =================================================================
+    // 5. PERSISTÊNCIA E BACKUP
+    // =================================================================
+
+    // 1. Verificação passiva (não mostra prompt, seguro para mounted)
     async verificarStatusPersistencia() {
         if (navigator.storage && navigator.storage.persisted) {
             return await navigator.storage.persisted();
         }
         return false;
     },
+
+    // 2. Solicitação ativa (precisa ser disparada por clique do usuário)
     async solicitarPersistencia() {
         if (navigator.storage && navigator.storage.persist) {
             const isPersisted = await navigator.storage.persisted();
@@ -356,16 +385,15 @@ export default {
             if (granted) {
                 console.log("✅ Permissão de persistência concedida!");
             } else {
-                console.warn("⚠️ Permissão de persistência negada ou não atendida pelo navegador.");
+                console.warn("⚠️ Permissão de persistência negada.");
             }
             return granted;
         } else {
-            console.log("ℹ️ API de persistência não suportada neste navegador.");
+            console.log("ℹ️ API de persistência não suportada.");
             return false;
         }
     },
 
-    // [CORREÇÃO] Função restaurada
     async verificarEspaco() {
         if (navigator.storage && navigator.storage.estimate) {
             const { usage, quota } = await navigator.storage.estimate();
@@ -452,26 +480,5 @@ export default {
             console.error("Erro ao importar backup:", error);
             throw error;
         }
-    },
-
-    async avancarLigaParaFaseFinal(idCampeonato, timesClassificados) {
-        const campeonato = await this.getCampeonatoById(idCampeonato);
-        if (!campeonato) throw new Error("Campeonato não encontrado");
-
-        const maxRodada = campeonato.jogos.reduce((max, j) => Math.max(max, j.rodada), 0);
-        const turnosFinal = parseInt(campeonato.turnosFaseFinal) || 1;
-
-        let novosJogos = gerarJogosFaseFinalPontosCorridos(timesClassificados, turnosFinal, maxRodada);
-        
-        // Vincula ID
-        novosJogos = novosJogos.map(j => ({ ...j, campeonatoId: idCampeonato }));
-        
-        campeonato.jogos = [...campeonato.jogos, ...novosJogos];
-        
-        // Atualiza status se necessário ou marca flag interna
-        // campeonato.faseAtual = 'Fase Final'; 
-
-        await this.atualizarCampeonato(campeonato);
-        return true;
     }
 };
