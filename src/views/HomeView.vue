@@ -151,7 +151,7 @@
 
             <div class="border-top border-secondary my-1"></div>
 
-            <BButton variant="outline-info" class="text-start p-3 d-flex align-items-center quick-btn" @click="$router.push('/scout')">
+            <BButton variant="outline-info" class="text-start p-3 d-flex align-items-center quick-btn" @click="$router.push('/busca-jogadores')">
               <span class="fs-4 me-3">🔎</span>
               <div>
                 <div class="fw-bold text-white">Scout de Jogadores</div>
@@ -159,7 +159,7 @@
               </div>
             </BButton>
 
-            <BButton v-if="temNacionalidade" variant="outline-success" class="text-start p-3 d-flex align-items-center quick-btn" @click="$router.push('/scout-nacionalidade')">
+            <BButton v-if="temNacionalidade" variant="outline-success" class="text-start p-3 d-flex align-items-center quick-btn" @click="$router.push('/busca-nacionalidade')">
               <span class="fs-4 me-3">🌍</span>
               <div>
                 <div class="fw-bold text-white">Por Nacionalidade</div>
